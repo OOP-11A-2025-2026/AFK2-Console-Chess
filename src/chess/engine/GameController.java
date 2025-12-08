@@ -223,7 +223,6 @@ public class GameController
 
             String whiteName = meta.getTag("White");
             String blackName = meta.getTag("Black");
-            // Fallback names if missing
             if (whiteName == null) whiteName = "White";
             if (blackName == null) blackName = "Black";
 
