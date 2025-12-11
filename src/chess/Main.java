@@ -12,7 +12,7 @@ public class Main {
 
     public static void main(String[] args) {
         System.out.println("========================================");
-        System.out.println("      AFK – OOP Console Chess");
+        System.out.println("      AFK2 – OOP Console Chess");
         System.out.println("========================================\n");
 
         // Test 1: Initialize game
