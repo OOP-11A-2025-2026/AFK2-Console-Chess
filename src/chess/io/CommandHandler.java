@@ -3,6 +3,7 @@ package chess.io;
 import chess.core.*;
 import chess.engine.GameController;
 import chess.rules.*;
+import java.io.File;
 
 /**
  * Routes parsed commands to the GameController.

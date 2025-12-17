@@ -18,6 +18,9 @@ public class GameController
     private Game game;
     private final List<PgnMoveRecord> pgnMoves;
     private PgnGameMetadata metadata;
+    
+    private ChessEngine engine;
+    private BotDifficulty botDifficulty;
 
     public GameController()
     {
@@ -44,8 +47,12 @@ public class GameController
 
         try
         {
-            if (startingFen == null || startingFen.trim().isEmpty()) {this.game = new Game(white, black);}
-            else {this.game = new Game(white, black, startingFen);}
+            chess.core.ChessClock clock = new chess.core.ChessClock(5 * 60 * 1000); // 5 minutes
+            if (startingFen == null || startingFen.trim().isEmpty()) {
+                this.game = new Game(white, black, clock);
+            } else {
+                this.game = new Game(white, black, startingFen);
+            }
         }
         catch (Exception ex)
         {
@@ -236,8 +243,20 @@ public class GameController
 
             for (PgnMoveRecord rec : moves)
             {
-                if (rec.getWhiteSan() != null) {applyAlgebraicMove(rec.getWhiteSan());}
-                if (rec.getBlackSan() != null) {applyAlgebraicMove(rec.getBlackSan());}
+                if (rec.getWhiteSan() != null) {
+                    try {
+                        applyAlgebraicMove(rec.getWhiteSan());
+                    } catch (Exception e) {
+                        throw new EngineException("Failed to apply white move " + rec.getMoveNumber() + ": " + rec.getWhiteSan() + " - " + e.getMessage(), e);
+                    }
+                }
+                if (rec.getBlackSan() != null) {
+                    try {
+                        applyAlgebraicMove(rec.getBlackSan());
+                    } catch (Exception e) {
+                        throw new EngineException("Failed to apply black move " + rec.getMoveNumber() + ": " + rec.getBlackSan() + " - " + e.getMessage(), e);
+                    }
+                }
             }
 
         }
@@ -427,4 +446,81 @@ public class GameController
         }
         catch (Exception ignored) { }
     }
-}
+
+    /**
+     * Initializes the bot engine with the given difficulty.
+     */
+    public synchronized void initializeBot(BotDifficulty difficulty) throws EngineException {
+        try {
+            this.botDifficulty = difficulty;
+            this.engine = new StockfishEngine();
+            this.engine.start();
+            this.engine.setSkillLevel(difficulty.getSkillLevel());
+        } catch (IOException e) {
+            throw new EngineException("Failed to initialize bot: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Gets the best move from the bot for the current position.
+     */
+    public synchronized String getBotMove() throws EngineException {
+        if (engine == null) {
+            throw new EngineException("Bot not initialized");
+        }
+        if (game == null) {
+            throw new EngineException("No active game");
+        }
+
+        try {
+            int depth = calculateDepthFromDifficulty(botDifficulty);
+            Color sideToMove = game.getCurrentPlayerColor();
+            String move = engine.bestMove(game.getBoard(), sideToMove, depth);
+            return move;
+        } catch (IOException e) {
+            throw new EngineException("Bot failed to calculate move: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Calculates search depth based on difficulty level.
+     */
+    private int calculateDepthFromDifficulty(BotDifficulty difficulty) {
+        switch (difficulty) {
+            case BEGINNER:
+                return 5;
+            case NOVICE:
+                return 8;
+            case INTERMEDIATE:
+                return 12;
+            case ADVANCED:
+                return 18;
+            case EXPERT:
+                return 25;
+            case GRANDMASTER:
+                return 35;
+            default:
+                return 10;
+        }
+    }
+
+    /**
+     * Shuts down the bot engine.
+     */
+    public synchronized void shutdownBot() throws EngineException {
+        if (engine != null) {
+            try {
+                engine.stop();
+                engine = null;
+            } catch (IOException e) {
+                throw new EngineException("Failed to shutdown bot: " + e.getMessage(), e);
+            }
+        }
+    }
+
+    /**
+     * Checks if bot is initialized.
+     */
+    public synchronized boolean isBotInitialized() {
+        return engine != null;
+    }}

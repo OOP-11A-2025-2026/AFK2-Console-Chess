@@ -36,6 +36,49 @@ public class King extends Piece {
             }
         }
 
+        // Castling: check king and rook haven't moved, squares are empty, and squares king passes through are not attacked
+        if (!this.hasMoved) {
+            int kingFile = position.getFile();
+            int rank = position.getRank();
+            // King-side castling (rook at file 7)
+            try {
+                Position rookKPos = new Position(7, rank);
+                Piece rookK = board.getPiece(rookKPos);
+                if (rookK != null && rookK.getClass().getSimpleName().equals("Rook") && rookK.getColor() == color && !rookK.hasMoved()) {
+                    Position p1 = new Position(kingFile + 1, rank);
+                    Position p2 = new Position(kingFile + 2, rank);
+                    if (board.isEmpty(p1) && board.isEmpty(p2)) {
+                        if (!chess.rules.MoveValidator.isPositionAttacked(board, position, color.opposite())
+                                && !chess.rules.MoveValidator.isPositionAttacked(board, p1, color.opposite())
+                                && !chess.rules.MoveValidator.isPositionAttacked(board, p2, color.opposite())) {
+                            destinations.add(p2);
+                        }
+                    }
+                }
+            } catch (IllegalArgumentException e) {
+                // ignore if position creation invalid
+            }
+
+            // Queen-side castling (rook at file 0)
+            try {
+                Position rookQPos = new Position(0, rank);
+                Piece rookQ = board.getPiece(rookQPos);
+                if (rookQ != null && rookQ.getClass().getSimpleName().equals("Rook") && rookQ.getColor() == color && !rookQ.hasMoved()) {
+                    Position q1 = new Position(kingFile - 1, rank);
+                    Position q2 = new Position(kingFile - 2, rank);
+                    if (board.isEmpty(q1) && board.isEmpty(q2)) {
+                        if (!chess.rules.MoveValidator.isPositionAttacked(board, position, color.opposite())
+                                && !chess.rules.MoveValidator.isPositionAttacked(board, q1, color.opposite())
+                                && !chess.rules.MoveValidator.isPositionAttacked(board, q2, color.opposite())) {
+                            destinations.add(q2);
+                        }
+                    }
+                }
+            } catch (IllegalArgumentException e) {
+                // ignore
+            }
+        }
+
         return destinations;
     }
 

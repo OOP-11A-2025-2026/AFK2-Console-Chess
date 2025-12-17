@@ -105,7 +105,7 @@ public class MoveValidator {
                 Piece piece = board.getPiece(piecePos);
 
                 if (piece != null && piece.getColor() == opponentColor) {
-                    if (piece.getLegalDestinations(board).contains(pos)) {
+                    if (isSquareAttackedByPiece(board, piecePos, pos, piece)) {
                         return true;
                     }
                 }
@@ -114,4 +114,50 @@ public class MoveValidator {
 
         return false;
     }
-}
+
+    /**
+     * Determines whether a particular piece attacks a target square without
+     * invoking piece.getLegalDestinations (avoids recursion with King).
+     */
+    private static boolean isSquareAttackedByPiece(Board board, Position from, Position target, Piece piece) {
+        String className = piece.getClass().getSimpleName();
+
+        switch (className) {
+            case "Pawn": {
+                int dir = piece.getColor() == chess.core.Color.WHITE ? 1 : -1;
+                int df = target.getFile() - from.getFile();
+                int dr = target.getRank() - from.getRank();
+                return dr == dir && Math.abs(df) == 1;
+            }
+            case "Knight": {
+                int df = Math.abs(target.getFile() - from.getFile());
+                int dr = Math.abs(target.getRank() - from.getRank());
+                return (df == 1 && dr == 2) || (df == 2 && dr == 1);
+            }
+            case "Bishop": {
+                int df = target.getFile() - from.getFile();
+                int dr = target.getRank() - from.getRank();
+                if (Math.abs(df) != Math.abs(dr) || df == 0) return false;
+                return isPathClear(board, from, target);
+            }
+            case "Rook": {
+                int df = target.getFile() - from.getFile();
+                int dr = target.getRank() - from.getRank();
+                if (df != 0 && dr != 0) return false;
+                return isPathClear(board, from, target);
+            }
+            case "Queen": {
+                int df = target.getFile() - from.getFile();
+                int dr = target.getRank() - from.getRank();
+                if (df != 0 && dr != 0 && Math.abs(df) != Math.abs(dr)) return false;
+                return isPathClear(board, from, target);
+            }
+            case "King": {
+                int df = Math.abs(target.getFile() - from.getFile());
+                int dr = Math.abs(target.getRank() - from.getRank());
+                return df <= 1 && dr <= 1 && (df + dr > 0);
+            }
+            default:
+                return false;
+        }
+    }}

@@ -14,6 +14,7 @@ public final class PgnParser
 
     private static final Pattern TAG_PATTERN = Pattern.compile("^\\s*\\[(\\w+)\\s+\"(.*)\"\\]\\s*$");
     private static final Pattern MOVE_NUMBER_PATTERN = Pattern.compile("^(\\d+)\\.(?:\\.\\.)?$"); // 1. or 1...
+    private static final Pattern RESULT_MARKER_PATTERN = Pattern.compile("^(1-0|0-1|1/2-1/2|\\*)$"); // Game result markers
     public ParseResult parse(File file) throws IOException, PgnFormatException
     {
         if (file == null) throw new IllegalArgumentException("file must not be null");
@@ -62,6 +63,7 @@ public final class PgnParser
                     for (String token : rawMovetext.split(" "))
                     {
                         if (token.trim().isEmpty()) continue;
+                        if (isResultMarker(token.trim())) continue; // Skip game result markers
                         movetextTokens.add(token.trim());
                     }
                 }
@@ -156,6 +158,8 @@ public final class PgnParser
     }
 
     private boolean isMoveNumberToken(String t) {return MOVE_NUMBER_PATTERN.matcher(t).matches();}
+
+    private boolean isResultMarker(String t) {return RESULT_MARKER_PATTERN.matcher(t).matches();}
 
     public static final class ParseResult
     {

@@ -1,18 +1,33 @@
 package chess.engine;
 
+import chess.core.Board;
+import chess.core.Color;
+
 import java.io.*;
 
-public class StockfishEngine {
+/**
+ * Stockfish UCI engine implementation.
+ * Communicates with Stockfish via UCI protocol.
+ */
+public class StockfishEngine implements ChessEngine {
 
     private Process engine;
     private BufferedWriter writer;
     private BufferedReader reader;
+    private boolean isRunning;
+    private int skillLevel = 10;  // Default skill level
 
     /**
      * Starts the Stockfish engine process.
      */
-    public boolean startEngine(String pathToEngine) {
+    @Override
+    public void start() throws IOException {
         try {
+            String pathToEngine = findStockfishPath();
+            if (pathToEngine == null) {
+                throw new IOException("Stockfish not found. Please install Stockfish or provide path via environment variable STOCKFISH_PATH");
+            }
+
             engine = new ProcessBuilder(pathToEngine)
                     .redirectErrorStream(true)
                     .start();
@@ -21,22 +36,112 @@ public class StockfishEngine {
             reader = new BufferedReader(new InputStreamReader(engine.getInputStream()));
 
             sendCommand("uci");
-            waitReady();
-
-            return true;
+            waitForUciOk();
+            isRunning = true;
 
         } catch (Exception e) {
-            System.out.println("Failed to start Stockfish: " + e.getMessage());
-            return false;
+            throw new IOException("Failed to start Stockfish: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Finds Stockfish executable in common locations.
+     */
+    private String findStockfishPath() {
+        // Check environment variable first
+        String envPath = System.getenv("STOCKFISH_PATH");
+        if (envPath != null && new File(envPath).exists()) {
+            return envPath;
+        }
+
+        // Check common macOS paths
+        String[] paths = {
+            "/usr/local/bin/stockfish",
+            "/opt/homebrew/bin/stockfish",
+            "stockfish",  // In PATH
+            "C:\\Program Files\\Stockfish\\stockfish.exe",  // Windows
+            "C:\\Program Files (x86)\\Stockfish\\stockfish.exe"
+        };
+
+        for (String path : paths) {
+            try {
+                Process p = new ProcessBuilder(path, "--version").start();
+                BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                String line = br.readLine();
+                br.close();
+                if (line != null && line.contains("Stockfish")) {
+                    return path;
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Sets the skill level for Stockfish (0-20, where 20 is max strength).
+     */
+    @Override
+    public void setSkillLevel(int level) throws IOException {
+        if (level < 0 || level > 20) {
+            throw new IllegalArgumentException("Skill level must be 0-20");
+        }
+        this.skillLevel = level;
+        if (isRunning) {
+            sendCommand("setoption name Skill Level value " + level);
+        }
+    }
+
+    /**
+     * Gets the best move for a position.
+     */
+    @Override
+    public String bestMove(Board board, Color sideToMove, int depth) throws IOException {
+        if (!isRunning) {
+            throw new IOException("Engine not running");
+        }
+
+        String fen = FenUtil.generateFEN(board, sideToMove);
+        
+        sendCommand("position fen " + fen);
+        sendCommand("go depth " + depth);
+
+        String output = getOutput(3000);
+
+        for (String line : output.split("\n")) {
+            if (line.trim().startsWith("bestmove")) {
+                String[] parts = line.split("\\s+");
+                if (parts.length >= 2) {
+                    return parts[1];  // returns "e2e4"
+                }
+            }
+        }
+
+        throw new IOException("No bestmove found in engine output");
     }
 
     /**
      * Sends a UCI command to the engine.
      */
-    public void sendCommand(String command) throws IOException {
+    private void sendCommand(String command) throws IOException {
+        if (writer == null) throw new IOException("Engine not initialized");
         writer.write(command + "\n");
         writer.flush();
+    }
+
+    /**
+     * Waits for Stockfish to send "uciok".
+     */
+    private void waitForUciOk() throws IOException {
+        String line;
+        long timeout = System.currentTimeMillis() + 5000;
+        while ((line = reader.readLine()) != null) {
+            if (line.contains("uciok")) return;
+            if (System.currentTimeMillis() > timeout) {
+                throw new IOException("UCI initialization timeout");
+            }
+        }
     }
 
     /**
@@ -45,53 +150,53 @@ public class StockfishEngine {
     private void waitReady() throws IOException {
         sendCommand("isready");
         String line;
+        long timeout = System.currentTimeMillis() + 5000;
         while ((line = reader.readLine()) != null) {
             if (line.contains("readyok")) return;
+            if (System.currentTimeMillis() > timeout) {
+                throw new IOException("readyok timeout");
+            }
         }
     }
 
     /**
      * Reads all available engine output for a limited time.
      */
-    public String getOutput(long waitTimeMs) throws IOException {
+    private String getOutput(long waitTimeMs) throws IOException {
         StringBuilder buffer = new StringBuilder();
         long start = System.currentTimeMillis();
 
         while (System.currentTimeMillis() - start < waitTimeMs) {
-            if (reader.ready()) {
-                String line = reader.readLine();
-                if (line == null) break;
-                buffer.append(line).append("\n");
+            try {
+                if (reader.ready()) {
+                    String line = reader.readLine();
+                    if (line == null) break;
+                    buffer.append(line).append("\n");
+                }
+            } catch (Exception e) {
+                break;
+            }
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException ignored) {
             }
         }
         return buffer.toString();
     }
 
     /**
-     * Gets the best move using a FEN string.
+     * Stops the Stockfish engine.
      */
-    public String getBestMove(String fen, int depth) throws IOException {
-        sendCommand("position fen " + fen);
-        sendCommand("go depth " + depth);
-
-        String output = getOutput(2000);
-
-        for (String line : output.split("\n")) {
-            if (line.startsWith("bestmove")) {
-                return line.split(" ")[1];  // returns "e2e4"
-            }
-        }
-
-        return "none";
-    }
-
-    /**
-     * Properly kills the engine process.
-     */
-    public void stopEngine() throws IOException {
+    @Override
+    public void stop() throws IOException {
         if (engine != null) {
-            sendCommand("quit");
-            engine.destroy();
+            try {
+                sendCommand("quit");
+                engine.waitFor();
+            } catch (Exception e) {
+                engine.destroy();
+            }
+            isRunning = false;
         }
     }
 }
