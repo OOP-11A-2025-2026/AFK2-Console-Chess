@@ -104,10 +104,15 @@ public class StockfishEngine implements ChessEngine {
 
         String fen = FenUtil.generateFEN(board, sideToMove);
         
+        // Send position and wait until engine is ready
         sendCommand("position fen " + fen);
+        waitReady();
+
+        // Use depth search; allow more time for deeper searches
         sendCommand("go depth " + depth);
 
-        String output = getOutput(3000);
+        long waitTimeMs = Math.min(30000, Math.max(3000, depth * 500)); // dynamic timeout with caps
+        String output = getOutput(waitTimeMs);
 
         for (String line : output.split("\n")) {
             if (line.trim().startsWith("bestmove")) {
@@ -118,7 +123,18 @@ public class StockfishEngine implements ChessEngine {
             }
         }
 
-        throw new IOException("No bestmove found in engine output");
+        // As a fallback, try one more read with a longer timeout
+        output = getOutput(5000);
+        for (String line : output.split("\n")) {
+            if (line.trim().startsWith("bestmove")) {
+                String[] parts = line.split("\\s+");
+                if (parts.length >= 2) {
+                    return parts[1];
+                }
+            }
+        }
+
+        throw new IOException("No bestmove found in engine output (timeout)");
     }
 
     /**

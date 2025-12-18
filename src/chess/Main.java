@@ -170,6 +170,7 @@ public class Main {
             // Initialize bot in game controller
             gameController.newGame(white, black, null);
             gameController.initializeBot(difficulty);
+            ui.displayMessage("Bot initialized (" + difficulty.name() + ")");
             
             undoManager.clear();
             ui.displayMessage("Game started! Playing as " + playerColor.name() + " against " + difficulty.name() + " bot");
@@ -177,7 +178,7 @@ public class Main {
 
             // If bot plays as white, make bot move immediately
             if (bot.getColor() == Color.WHITE) {
-                ui.displayMessage("Bot is thinking...");
+                ui.displayMessage("Bot is thinking... (may take a few seconds)");
                 handleBotMove();
             }
         } catch (Exception e) {
