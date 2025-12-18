@@ -316,5 +316,30 @@ public class ConsoleUI {
         }
         System.out.println();
     }
+
+    /**
+     * Displays undo availability hint.
+     * 
+     * @param canUndo whether undo is available
+     */
+    public void displayUndoHint(boolean canUndo) {
+        if (canUndo) {
+            System.out.println(ANSI_GREEN + "💡 Tip: Type 'undo' to undo your last move" + ANSI_RESET);
+        }
+    }
+
+    /**
+     * Displays successful undo confirmation.
+     */
+    public void displayUndoSuccess() {
+        System.out.println(ANSI_GREEN + "✓ Move successfully undone" + ANSI_RESET);
+    }
+
+    /**
+     * Displays undo unavailable message.
+     */
+    public void displayUndoUnavailable() {
+        System.out.println(ANSI_RED + "✗ No moves to undo" + ANSI_RESET);
+    }
 }
 

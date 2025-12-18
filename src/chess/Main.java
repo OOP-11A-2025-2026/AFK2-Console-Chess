@@ -242,6 +242,11 @@ public class Main {
             ui.displayCheck();
         }
 
+        // Display undo hint if moves are available
+        if (undoManager.canUndo()) {
+            ui.displayUndoHint(true);
+        }
+
         // Display game-ending states
         if (currentGame.getGameState() != GameState.ONGOING && 
             currentGame.getGameState() != GameState.CHECK) {
@@ -401,9 +406,11 @@ public class Main {
      */
     private static void handleUndo() {
         if (undoManager.undo(currentGame)) {
-            ui.displayMessage("Move undone");
+            ui.displayUndoSuccess();
+            ui.displayBoard(currentGame.getBoard());
+            ui.displayGameInfo(currentGame);
         } else {
-            ui.displayError("No moves to undo");
+            ui.displayUndoUnavailable();
         }
     }
 
