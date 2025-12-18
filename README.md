@@ -334,7 +334,7 @@ Record in move history
 
 The diagram below illustrates the main game states and transitions (new game, loading, ongoing play, draw offer, resignation, check, checkmate, stalemate, and undo transitions):
 
-![State Diagram](state-diagram.png)
+![State Diagram](state-diagram.jpg)
 
 ### Core Principles
 
