@@ -68,21 +68,55 @@ A fully playable, object-oriented chess game implemented in **Java** with a cons
 cd /path/to/AFK2-Console-Chess
 ```
 
-### 2. Compile
+### 2. Compile & Run
+
+#### **Linux / macOS** (Use Makefile)
+```bash
+make run
+```
+
+**Other commands:**
+```bash
+make compile    # Compile only
+make clean      # Remove compiled files
+make test       # Run bot integration tests
+make help       # Show all available commands
+```
+
+#### **Windows** (Use Batch Script)
+```cmd
+run.bat
+```
+
+**Or with command:**
+```cmd
+run.bat run      # Run the game
+run.bat compile  # Compile only
+run.bat clean    # Remove compiled files
+run.bat test     # Run bot integration tests
+run.bat help     # Show all available commands
+```
+
+### 3. Manual Compilation (All Platforms)
+If you prefer not to use scripts:
+
+**Linux/macOS:**
 ```bash
 javac -d bin -sourcepath src src/chess/**/*.java
+java -cp bin chess.Main
 ```
 
-Or using Maven (if pom.xml exists):
-```bash
-mvn clean compile
+**Windows (cmd.exe):**
+```cmd
+javac -d bin -sourcepath src src\chess\*.java src\chess\core\*.java src\chess\pieces\*.java src\chess\rules\*.java src\chess\io\*.java src\chess\pgn\*.java src\chess\engine\*.java src\chess\util\*.java
+java -cp bin chess.Main
 ```
 
-### 3. (Optional) Install Stockfish
+### 4. (Optional) Install Stockfish
 For bot functionality, download Stockfish:
 - **macOS**: `brew install stockfish`
 - **Linux**: `sudo apt-get install stockfish`
-- **Windows**: Download from [stockfishchess.org](https://stockfishchess.org)
+- **Windows**: Download from [stockfishchess.org](https://stockfishchess.org) or use `choco install stockfish` (if Chocolatey installed)
 
 Ensure `stockfish` is in your system PATH or provide the full path in config.
 
@@ -90,7 +124,30 @@ Ensure `stockfish` is in your system PATH or provide the full path in config.
 
 ## Usage
 
+### Quick Start
+
+**Linux / macOS:**
+```bash
+make run
+```
+
+**Windows:**
+```cmd
+run.bat
+```
+
 ### Run the Game
+
+**Using scripts:**
+```bash
+# Linux/macOS
+make run
+
+# Windows
+run.bat
+```
+
+**Or manually:**
 ```bash
 java -cp bin chess.Main
 ```
@@ -405,14 +462,20 @@ The project includes validation for:
 - Board boundary validation
 
 ### Running Tests
+
+**Linux / macOS (Make):**
 ```bash
-# Compile
+make test
+```
+
+**Windows (Batch Script):**
+```cmd
+run.bat test
+```
+
+**Or manually:**
+```bash
 javac -d bin -sourcepath src src/chess/**/*.java
-
-# Run main game
-java -cp bin chess.Main
-
-# Or run test
 java -cp bin TestBotGame
 ```
 
