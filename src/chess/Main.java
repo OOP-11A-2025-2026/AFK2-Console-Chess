@@ -458,9 +458,10 @@ public class Main {
         if (ui.promptYesNo("Are you sure you want to resign?")) {
             Player winner = currentGame.getCurrentPlayer().getColor() == Color.WHITE ?
                     currentGame.getBlackPlayer() : currentGame.getWhitePlayer();
-            currentGame.setGameState(GameState.RESIGNATION);
+            currentGame.resign();
             ui.displayMessage(currentGame.getCurrentPlayer().getName() + " resigned!");
             ui.displayMessage(winner.getName() + " wins!");
+            System.exit(0);
         }
     }
 

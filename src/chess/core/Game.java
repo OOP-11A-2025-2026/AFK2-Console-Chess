@@ -525,10 +525,8 @@ public class Game {
     /**
      * Resigns from the game.
      */
-    public void resign(Player player) {
-        if (player != null && (player == whitePlayer || player == blackPlayer)) {
+    public void resign() {
             setGameState(GameState.RESIGNATION);
-        }
     }
 
     /**
