@@ -6,23 +6,19 @@ import chess.pieces.Rook;
 
 /**
  * Handles castling moves (both king-side and queen-side).
- * Validates castling conditions and applies the special move logic.
+ *
+ * PERMISSIVE MODE (per your requirement):
+ * - DOES NOT check hasMoved() for king/rook.
+ * - Only allows castling when king is on e-file start square and rook is on the corner.
+ * - Requires squares between are empty.
+ * - Requires king is not in check and does not pass through/into check.
  */
 public class CastlingHandler {
 
     /**
      * Determines if a castling move is valid.
-     * Validates all castling conditions:
-     * - King and rook haven't moved
-     * - No pieces between king and rook
-     * - King is not in check
-     * - King doesn't move through check
-     * - King doesn't land in check
-     * 
-     * @param board the current board state
-     * @param kingPos the king's current position
-     * @param targetRookPos the rook position (for king-side or queen-side)
-     * @return true if castling is valid, false otherwise
+     *
+     * IMPORTANT: targetRookPos MUST be the rook's CURRENT square (a-file or h-file rook).
      */
     public static boolean isCastlingValid(Board board, Position kingPos, Position targetRookPos) {
         if (board == null || kingPos == null || targetRookPos == null) {
@@ -32,51 +28,56 @@ public class CastlingHandler {
         Piece kingPiece = board.getPiece(kingPos);
         Piece rookPiece = board.getPiece(targetRookPos);
 
-        // Check if king and rook exist and are correct types
+        // Must be king + rook
         if (!(kingPiece instanceof King) || !(rookPiece instanceof Rook)) {
             return false;
         }
 
-        // Check if they have the same color
+        // Same color
         if (kingPiece.getColor() != rookPiece.getColor()) {
             return false;
         }
 
-        // Check if both pieces haven't moved
-        if (kingPiece.hasMoved() || rookPiece.hasMoved()) {
+        // Same rank
+        if (kingPos.getRank() != targetRookPos.getRank()) {
             return false;
         }
 
-        // Check if there are no pieces between king and rook
+        // Standard starting squares ONLY: King on e-file, rook on a/h-file, correct back rank
+        int startRank = kingPiece.getColor() == Color.WHITE ? 0 : 7;
+        if (kingPos.getRank() != startRank || kingPos.getFile() != 4) {
+            return false;
+        }
+        if (targetRookPos.getRank() != startRank) {
+            return false;
+        }
+        int rookFile = targetRookPos.getFile();
+        if (rookFile != 0 && rookFile != 7) {
+            return false;
+        }
+
+        // Squares between must be empty
         if (!isPathClear(board, kingPos, targetRookPos)) {
             return false;
         }
 
-        // Check if king is in check
-        if (MoveValidator.isPositionAttacked(board, kingPos, kingPiece.getColor().opposite())) {
+        // King cannot be in check
+        Color opponent = kingPiece.getColor().opposite();
+        if (MoveValidator.isPositionAttacked(board, kingPos, opponent)) {
             return false;
         }
 
-        // Check if king moves through check or into check
+        // King cannot pass through check or end in check
         int kingFile = kingPos.getFile();
-        int rookFile = targetRookPos.getFile();
         int direction = Integer.compare(rookFile, kingFile);
 
-        // King moves two squares
-        int midFile = kingFile + direction;
-        int finalFile = kingFile + 2 * direction;
+        Position midPos = new Position(kingFile + direction, kingPos.getRank());
+        Position finalPos = new Position(kingFile + 2 * direction, kingPos.getRank());
 
-        // Check intermediate square and final square are not attacked
-        Position midPos = new Position(midFile, kingPos.getRank());
-        Position finalPos = new Position(finalFile, kingPos.getRank());
-
-        Color opponentColor = kingPiece.getColor().opposite();
-        
-        if (MoveValidator.isPositionAttacked(board, midPos, opponentColor)) {
+        if (MoveValidator.isPositionAttacked(board, midPos, opponent)) {
             return false;
         }
-
-        if (MoveValidator.isPositionAttacked(board, finalPos, opponentColor)) {
+        if (MoveValidator.isPositionAttacked(board, finalPos, opponent)) {
             return false;
         }
 
@@ -85,11 +86,8 @@ public class CastlingHandler {
 
     /**
      * Applies a castling move to the board.
-     * Moves both the king and the rook to their new positions.
-     * 
-     * @param board the board to apply the move to
-     * @param kingPos the king's current position
-     * @param targetRookPos the rook's position
+     *
+     * IMPORTANT: targetRookPos MUST be the rook's CURRENT square (a/h file corner).
      */
     public static void applyCastling(Board board, Position kingPos, Position targetRookPos) {
         if (board == null || kingPos == null || targetRookPos == null) {
@@ -99,7 +97,7 @@ public class CastlingHandler {
         Piece king = board.getPiece(kingPos);
         Piece rook = board.getPiece(targetRookPos);
 
-        if (king == null || rook == null) {
+        if (!(king instanceof King) || !(rook instanceof Rook)) {
             throw new IllegalArgumentException("King and rook must exist");
         }
 
@@ -107,30 +105,18 @@ public class CastlingHandler {
         int rookFile = targetRookPos.getFile();
         int rank = kingPos.getRank();
 
-        // Determine direction
         int direction = Integer.compare(rookFile, kingFile);
 
-        // Move king two squares
-        int kingNewFile = kingFile + 2 * direction;
-        Position kingNewPos = new Position(kingNewFile, rank);
+        // King goes two squares toward rook
+        Position kingNewPos = new Position(kingFile + 2 * direction, rank);
 
-        // Move rook next to king
-        int rookNewFile = kingFile + direction;
-        Position rookNewPos = new Position(rookNewFile, rank);
+        // Rook goes next to king on the inside
+        Position rookNewPos = new Position(kingFile + direction, rank);
 
-        // Apply moves
         board.movePiece(kingPos, kingNewPos);
         board.movePiece(targetRookPos, rookNewPos);
     }
 
-    /**
-     * Checks if the path between two positions is clear.
-     * 
-     * @param board the board
-     * @param from the starting position
-     * @param to the ending position
-     * @return true if the path is clear, false otherwise
-     */
     private static boolean isPathClear(Board board, Position from, Position to) {
         int fileDir = Integer.compare(to.getFile(), from.getFile());
         int rankDir = Integer.compare(to.getRank(), from.getRank());
@@ -149,19 +135,14 @@ public class CastlingHandler {
             file += fileDir;
             rank += rankDir;
         }
-
         return true;
     }
 
     /**
-     * Determines if a king-to-rook move represents a castling attempt.
-     * Checks if the king is on its starting rank and moving to/past a rook.
-     * 
-     * @param board the board
-     * @param kingPos the king's position
-     * @param targetPos the target position
-     * @param color the player's color
-     * @return true if this looks like a castling move, false otherwise
+     * Detects a castling attempt.
+     * Supports BOTH:
+     *  - Standard: king moves two squares (e1g1 / e1c1 / e8g8 / e8c8)
+     *  - Legacy: king targets rook square
      */
     public static boolean isCastlingAttempt(Board board, Position kingPos, Position targetPos, Color color) {
         if (board == null || kingPos == null || targetPos == null || color == null) {
@@ -169,28 +150,81 @@ public class CastlingHandler {
         }
 
         Piece piece = board.getPiece(kingPos);
-        if (!(piece instanceof King)) {
+        if (!(piece instanceof King) || piece.getColor() != color) {
             return false;
         }
 
-        // King must be on starting rank
         int startRank = color == Color.WHITE ? 0 : 7;
-        if (kingPos.getRank() != startRank) {
+        if (kingPos.getRank() != startRank || targetPos.getRank() != startRank) {
             return false;
         }
 
-        // Target must be on same rank
-        if (targetPos.getRank() != startRank) {
-            return false;
+        int fileDelta = targetPos.getFile() - kingPos.getFile();
+
+        // Standard castling: king moves exactly two squares
+        if (Math.abs(fileDelta) == 2) {
+            if (kingPos.getFile() != 4) return false;
+
+            int direction = Integer.compare(fileDelta, 0);
+            Position rookPos = new Position(direction > 0 ? 7 : 0, startRank);
+            Piece rook = board.getPiece(rookPos);
+            return (rook instanceof Rook) && rook.getColor() == color;
         }
 
-        // Target must be a rook of the same color
+        // Legacy style: target square is the rook
         Piece targetPiece = board.getPiece(targetPos);
-        if (!(targetPiece instanceof Rook) || targetPiece.getColor() != color) {
-            return false;
+        if (targetPiece instanceof Rook && targetPiece.getColor() == color) {
+            return Math.abs(targetPos.getFile() - kingPos.getFile()) > 1;
         }
 
-        // Must be more than one square away (normal king move is one square)
-        return Math.abs(targetPos.getFile() - kingPos.getFile()) > 1;
+        return false;
+    }
+
+    /**
+     * Resolves the rook position from a standard king castling move.
+     * e1->g1 => rook h1
+     * e1->c1 => rook a1
+     */
+    public static Position getRookPositionForStandardCastling(Position kingStart, Position kingTarget, Color color) {
+        if (kingStart == null || kingTarget == null || color == null) {
+            return null;
+        }
+
+        int startRank = color == Color.WHITE ? 0 : 7;
+        if (kingStart.getRank() != startRank || kingTarget.getRank() != startRank) {
+            return null;
+        }
+
+        if (kingStart.getFile() != 4) {
+            return null;
+        }
+
+        int fileDelta = kingTarget.getFile() - kingStart.getFile();
+        if (Math.abs(fileDelta) != 2) {
+            return null;
+        }
+
+        int direction = Integer.compare(fileDelta, 0);
+        return new Position(direction > 0 ? 7 : 0, startRank);
+    }
+
+    /**
+     * Applies standard castling when the UI provides the king destination (two-square king move).
+     */
+    public static void applyStandardCastling(Board board, Position kingStart, Position kingTarget, Color color) {
+        if (board == null || kingStart == null || kingTarget == null || color == null) {
+            throw new IllegalArgumentException("Invalid castling parameters");
+        }
+
+        Position rookPos = getRookPositionForStandardCastling(kingStart, kingTarget, color);
+        if (rookPos == null) {
+            throw new IllegalArgumentException("Not a standard castling move");
+        }
+
+        if (!isCastlingValid(board, kingStart, rookPos)) {
+            throw new IllegalArgumentException("Illegal castling move");
+        }
+
+        applyCastling(board, kingStart, rookPos);
     }
 }

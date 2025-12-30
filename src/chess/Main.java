@@ -345,12 +345,22 @@ public class Main {
 
             // Check for space-separated coordinate notation (e.g., "e2 e4")
             String[] parts = moveInput.trim().split("\\s+");
-            
+
             if (parts.length == 2 && isSquare(parts[0]) && isSquare(parts[1])) {
-                // Space-separated coordinate notation
+                String from = parts[0];
+                String to = parts[1];
+
+                // If this is castling in coordinate form (e1 g1, e1 c1, e8 g8, e8 c8),
+                // route it through SAN so the rook is moved by the engine.
+                String castleSan = castlingSanFromCoords(from, to);
                 try {
-                    currentGame.applyMove(parts[0], parts[1]);
-                    ui.displayMessage("Move: " + parts[0] + " → " + parts[1]);
+                    if (castleSan != null) {
+                        currentGame.applySan(castleSan);
+                        ui.displayMessage("Move: " + castleSan);
+                    } else {
+                        currentGame.applyMove(from, to);
+                        ui.displayMessage("Move: " + from + " → " + to);
+                    }
                     return true;
                 } catch (IllegalArgumentException e) {
                     ui.displayError("Illegal move: " + e.getMessage());
@@ -363,9 +373,16 @@ public class Main {
             if (moveInput.length() == 4 && moveInput.matches("[a-h][1-8][a-h][1-8]")) {
                 String from = moveInput.substring(0, 2);
                 String to = moveInput.substring(2, 4);
+
+                String castleSan = castlingSanFromCoords(from, to);
                 try {
-                    currentGame.applyMove(from, to);
-                    ui.displayMessage("Move: " + from + " → " + to);
+                    if (castleSan != null) {
+                        currentGame.applySan(castleSan);
+                        ui.displayMessage("Move: " + castleSan);
+                    } else {
+                        currentGame.applyMove(from, to);
+                        ui.displayMessage("Move: " + from + " → " + to);
+                    }
                     return true;
                 } catch (IllegalArgumentException e) {
                     ui.displayError("Illegal move: " + e.getMessage());
@@ -396,9 +413,29 @@ public class Main {
      * Checks if a string is a valid chess square (e.g., "e4").
      */
     private static boolean isSquare(String str) {
-        return str != null && str.length() == 2 && 
+        return str != null && str.length() == 2 &&
                str.charAt(0) >= 'a' && str.charAt(0) <= 'h' &&
                str.charAt(1) >= '1' && str.charAt(1) <= '8';
+    }
+
+    /**
+     * Converts coordinate castling (e.g., e1g1, e1c1, e8g8, e8c8) to SAN castling.
+     * Returns "O-O" or "O-O-O" (capital letter O), or null if not a castling coordinate.
+     */
+    private static String castlingSanFromCoords(String from, String to) {
+        if (from == null || to == null) return null;
+        from = from.trim();
+        to = to.trim();
+
+        // White
+        if (from.equals("e1") && to.equals("g1")) return "O-O";
+        if (from.equals("e1") && to.equals("c1")) return "O-O-O";
+
+        // Black
+        if (from.equals("e8") && to.equals("g8")) return "O-O";
+        if (from.equals("e8") && to.equals("c8")) return "O-O-O";
+
+        return null;
     }
 
     /**
@@ -477,9 +514,15 @@ public class Main {
             String from = uciMove.substring(0, 2);
             String to = uciMove.substring(2, 4);
 
-            // Apply the move
-            currentGame.applyMove(from, to);
-            ui.displayMessage("Bot played: " + from + " → " + to);
+            // Apply the move (route castling through SAN so rook moves too)
+            String castleSan = castlingSanFromCoords(from, to);
+            if (castleSan != null) {
+                currentGame.applySan(castleSan);
+                ui.displayMessage("Bot played: " + castleSan);
+            } else {
+                currentGame.applyMove(from, to);
+                ui.displayMessage("Bot played: " + from + " → " + to);
+            }
 
             return true;
         } catch (Exception e) {
