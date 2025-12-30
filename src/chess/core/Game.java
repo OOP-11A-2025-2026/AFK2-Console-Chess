@@ -140,6 +140,11 @@ public class Game {
         switchPlayer();
     }
 
+    public void clearDrawOffer() {
+        this.drawOfferPending = false;
+        this.drawOfferer = null;
+    }
+
     /**
      * Switches the current player.
      */

@@ -233,9 +233,13 @@ public class Main {
         // Update game state (check, checkmate, stalemate)
         updateGameState();
 
-        // Display game info and board
+        // Display game info (and board unless a draw response is pending)
         ui.displayGameInfo(currentGame);
-        ui.displayBoard(currentGame.getBoard());
+        if (!currentGame.isDrawOfferPending()) {
+            ui.displayBoard(currentGame.getBoard());
+        } else {
+            ui.displayMessage("(Draw pending — board hidden. Type 'accept' or 'reject', or play a move to decline.)");
+        }
 
         // Display check warning if applicable
         if (currentGame.getGameState() == GameState.CHECK) {
@@ -461,7 +465,11 @@ public class Main {
             currentGame.resign();
             ui.displayMessage(currentGame.getCurrentPlayer().getName() + " resigned!");
             ui.displayMessage(winner.getName() + " wins!");
-            System.exit(0);
+            currentGame = null;
+            try {
+                gameController.shutdownBot();
+            } catch (Exception ignored) {
+            }
         }
     }
 
@@ -540,13 +548,16 @@ public class Main {
      * Handles draw offer.
      */
     private static void handleDrawOffer() {
+        if (currentGame.isDrawOfferPending()) {
+            ui.displayError("Draw offer already pending — accept, reject, or play a move.");
+            return;
+        }
         currentGame.offerDraw();
         ui.displayMessage(currentGame.getCurrentPlayer().getName() + " offers a draw");
+
+        currentGame.switchPlayer(); // opponent responds
     }
 
-    /**
-     * Handles draw acceptance.
-     */
     private static void handleDrawAccept() {
         if (!currentGame.isDrawOfferPending()) {
             ui.displayError("No draw offer to accept");
@@ -554,6 +565,17 @@ public class Main {
         }
         currentGame.acceptDraw();
         ui.displayMessage("Draw accepted!");
+        ui.displayGameResult(currentGame);
+    }
+
+    private static void handleDrawReject() {
+        if (!currentGame.isDrawOfferPending()) {
+            ui.displayError("No draw offer to reject");
+            return;
+        }
+        currentGame.clearDrawOffer();
+        ui.displayMessage("Draw offer rejected.");
+        // keep turn with current player (they already had next move)
     }
 
     /**
@@ -575,6 +597,16 @@ public class Main {
      */
     private static void updateGameState() {
         if (currentGame == null) {
+            return;
+        }
+
+        // Do not overwrite terminal/non-position states set by commands (resign/draw) or previous resolution.
+        GameState existing = currentGame.getGameState();
+        if (existing == GameState.RESIGNATION ||
+            existing == GameState.DRAW_BY_AGREEMENT ||
+            existing == GameState.TIME_OUT ||
+            existing == GameState.CHECKMATE ||
+            existing == GameState.STALEMATE) {
             return;
         }
 
