@@ -29,14 +29,30 @@ public abstract class Piece {
         this.hasMoved = false;
     }
 
+    /**
+     * Gets the color of this piece.
+     * 
+     * @return the color (WHITE or BLACK)
+     */
     public Color getColor() {
         return color;
     }
 
+    /**
+     * Gets the current position of this piece on the board.
+     * 
+     * @return the piece's position
+     */
     public Position getPosition() {
         return position;
     }
 
+    /**
+     * Checks if this piece has moved from its starting position.
+     * This is used for special rules like castling and pawn double moves.
+     * 
+     * @return true if the piece has moved, false otherwise
+     */
     public boolean hasMoved() {
         return hasMoved;
     }
@@ -73,6 +89,12 @@ public abstract class Piece {
      */
     public abstract char getSymbol();
 
+    /**
+     * Returns a string representation of this piece.
+     * Format: symbol@position (e.g., "♔@e1" for white king at e1)
+     * 
+     * @return string representation of the piece
+     */
     @Override
     public String toString() {
         return getSymbol() + "@" + position.toAlgebraic();

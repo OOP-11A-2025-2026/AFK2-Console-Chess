@@ -24,10 +24,20 @@ public class Position {
         this.rank = rank;
     }
 
+    /**
+     * Gets the file of this position (0-7, where 0=a and 7=h).
+     * 
+     * @return the file number
+     */
     public int getFile() {
         return file;
     }
 
+    /**
+     * Gets the rank of this position (0-7, where 0=1 and 7=8).
+     * 
+     * @return the rank number
+     */
     public int getRank() {
         return rank;
     }

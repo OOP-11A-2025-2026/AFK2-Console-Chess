@@ -83,6 +83,9 @@ public class Board {
 
     /**
      * Gets the piece at a position, or null if empty.
+     * 
+     * @param pos the position to check
+     * @return the piece at the position, or null if the square is empty
      */
     public Piece getPiece(Position pos) {
         if (pos == null) {
@@ -92,7 +95,12 @@ public class Board {
     }
 
     /**
-     * Places a piece on the board.
+     * Places a piece on the board at the specified position.
+     * Updates king position tracking if a king is being placed.
+     * 
+     * @param piece the piece to place
+     * @param position the position to place the piece at
+     * @throws IllegalArgumentException if piece or position is null
      */
     public void placePiece(Piece piece, Position position) {
         if (piece == null || position == null) {
@@ -111,7 +119,9 @@ public class Board {
     }
 
     /**
-     * Removes a piece from the board.
+     * Removes a piece from the board at the specified position.
+     * 
+     * @param position the position to remove the piece from
      */
     public void removePiece(Position position) {
         if (position == null) {
@@ -122,7 +132,12 @@ public class Board {
 
     /**
      * Moves a piece from one position to another.
-     * Returns the captured piece (if any).
+     * Updates king position tracking and returns the captured piece, if any.
+     * 
+     * @param from the source position
+     * @param to the destination position
+     * @return the captured piece (if any), or null if this is not a capture
+     * @throws IllegalArgumentException if positions are null or no piece at source
      */
     public Piece movePiece(Position from, Position to) {
         if (from == null || to == null) {
@@ -153,6 +168,8 @@ public class Board {
 
     /**
      * Gets the position of the white king.
+     * 
+     * @return the position of the white king, or null if not found
      */
     public Position getWhiteKingPosition() {
         return whiteKingPosition;
@@ -160,6 +177,8 @@ public class Board {
 
     /**
      * Gets the position of the black king.
+     * 
+     * @return the position of the black king, or null if not found
      */
     public Position getBlackKingPosition() {
         return blackKingPosition;
@@ -167,13 +186,19 @@ public class Board {
 
     /**
      * Gets the king position for a given color.
+     * 
+     * @param color the color (WHITE or BLACK)
+     * @return the king position, or null if king not found
      */
     public Position getKingPosition(Color color) {
         return color == Color.WHITE ? whiteKingPosition : blackKingPosition;
     }
 
     /**
-     * Checks if a position is on the board.
+     * Checks if a position is on the board (within valid boundaries).
+     * 
+     * @param pos the position to check
+     * @return true if the position is valid and on the board, false otherwise
      */
     public boolean isOnBoard(Position pos) {
         if (pos == null) {
@@ -183,7 +208,10 @@ public class Board {
     }
 
     /**
-     * Checks if a square is empty.
+     * Checks if a square is empty (contains no piece).
+     * 
+     * @param pos the position to check
+     * @return true if the square is empty, false if it contains a piece
      */
     public boolean isEmpty(Position pos) {
         if (pos == null) {
@@ -193,7 +221,11 @@ public class Board {
     }
 
     /**
-     * Checks if a square contains an enemy piece.
+     * Checks if a square contains an enemy piece (opposite color).
+     * 
+     * @param pos the position to check
+     * @param color the color of the piece making the move
+     * @return true if the square contains an enemy piece, false otherwise
      */
     public boolean isEnemyPiece(Position pos, Color color) {
         Piece piece = getPiece(pos);
@@ -201,7 +233,11 @@ public class Board {
     }
 
     /**
-     * Checks if a square contains a friendly piece.
+     * Checks if a square contains a friendly piece (same color).
+     * 
+     * @param pos the position to check
+     * @param color the color to match
+     * @return true if the square contains a friendly piece, false otherwise
      */
     public boolean isFriendlyPiece(Position pos, Color color) {
         Piece piece = getPiece(pos);
@@ -209,14 +245,17 @@ public class Board {
     }
 
     /**
-     * Resets the board to the starting position.
+     * Resets the board to the starting position with all pieces initialized.
      */
     public void reset() {
         initializeStartingPosition();
     }
 
     /**
-     * Creates a deep copy of the board.
+     * Creates a deep copy of the board with all pieces and state.
+     * The copy is independent and modifications to it do not affect the original.
+     * 
+     * @return a new Board instance that is a deep copy of this board
      */
     public Board copy() {
         Map<Position, Piece> copiedPieces = new HashMap<>();
@@ -227,7 +266,7 @@ public class Board {
     }
 
     /**
-     * Clears the entire board.
+     * Clears the entire board by removing all pieces and resetting king positions.
      */
     public void clear() {
         pieces.clear();

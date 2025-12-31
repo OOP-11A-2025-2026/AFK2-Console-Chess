@@ -6,8 +6,20 @@ import chess.core.Piece;
 import chess.core.Position;
 import chess.pieces.*;
 
+/**
+ * Utility class for FEN (Forsyth-Edwards Notation) conversion.
+ * Provides methods to generate FEN strings from chess positions.
+ */
 public class FenUtil {
 
+    /**
+     * Generates a FEN string from a board position and side to move.
+     * Only includes the piece placement portion of the full FEN (no castling, en passant, etc.).
+     * 
+     * @param board the chess board to convert
+     * @param sideToMove the color of the player to move (WHITE or BLACK)
+     * @return a FEN string representing the board position
+     */
     public static String generateFEN(Board board, Color sideToMove) {
         StringBuilder fen = new StringBuilder();
 
@@ -54,6 +66,13 @@ public class FenUtil {
         return fen.toString();
     }
 
+    /**
+     * Converts a piece to its FEN character representation.
+     * Upper case for white pieces, lower case for black pieces.
+     * 
+     * @param piece the piece to convert
+     * @return the FEN character (p,n,b,r,q,k for black; P,N,B,R,Q,K for white)
+     */
     private static char pieceToFenChar(chess.core.Piece piece) {
         char c;
 

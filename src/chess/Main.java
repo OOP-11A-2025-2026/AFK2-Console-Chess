@@ -28,6 +28,12 @@ public class Main {
     private static Scanner scanner;
     private static Random random;
 
+    /**
+     * Main entry point for the AFK2 Console Chess application.
+     * Initializes the game system and runs the main game loop.
+     * 
+     * @param args command-line arguments (not used)
+     */
     public static void main(String[] args) {
         ui = new ConsoleUI();
         undoManager = new UndoManager();

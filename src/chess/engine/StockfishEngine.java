@@ -19,6 +19,10 @@ public class StockfishEngine implements ChessEngine {
 
     /**
      * Starts the Stockfish engine process.
+     * Initializes the UCI protocol communication and waits for engine readiness.
+     * Throws IOException if Stockfish executable cannot be found or started.
+     * 
+     * @throws IOException if the engine process fails to start
      */
     @Override
     public void start() throws IOException {
@@ -46,6 +50,10 @@ public class StockfishEngine implements ChessEngine {
 
     /**
      * Finds Stockfish executable in common locations.
+     * Checks environment variable STOCKFISH_PATH first, then searches common installation paths
+     * for both macOS and Windows systems.
+     * 
+     * @return the path to Stockfish executable, or null if not found
      */
     private String findStockfishPath() {
         // Check environment variable first
@@ -81,6 +89,12 @@ public class StockfishEngine implements ChessEngine {
 
     /**
      * Sets the skill level for Stockfish (0-20, where 20 is max strength).
+     * Lower skill levels make the engine weaker for easier play.
+     * Must be called after engine is started.
+     * 
+     * @param level the skill level (0-20 inclusive)
+     * @throws IllegalArgumentException if level is not in range 0-20
+     * @throws IOException if communication with engine fails
      */
     @Override
     public void setSkillLevel(int level) throws IOException {
@@ -94,7 +108,15 @@ public class StockfishEngine implements ChessEngine {
     }
 
     /**
-     * Gets the best move for a position.
+     * Gets the best move for a position using UCI protocol.
+     * Sends position in FEN format and searches to specified depth.
+     * Dynamically adjusts timeout based on search depth.
+     * 
+     * @param board the current board position
+     * @param sideToMove the color to move (WHITE or BLACK)
+     * @param depth the search depth (higher = stronger but slower)
+     * @return the best move in UCI format (e.g., "e2e4", "a7a8q")
+     * @throws IOException if engine communication fails or no move found
      */
     @Override
     public String bestMove(Board board, Color sideToMove, int depth) throws IOException {
@@ -139,6 +161,10 @@ public class StockfishEngine implements ChessEngine {
 
     /**
      * Sends a UCI command to the engine.
+     * Commands are sent via standard input to the Stockfish process.
+     * 
+     * @param command the UCI command to send
+     * @throws IOException if writing to engine fails
      */
     private void sendCommand(String command) throws IOException {
         if (writer == null) throw new IOException("Engine not initialized");
@@ -147,7 +173,11 @@ public class StockfishEngine implements ChessEngine {
     }
 
     /**
-     * Waits for Stockfish to send "uciok".
+     * Waits for Stockfish to send "uciok" response.
+     * Part of the UCI protocol initialization sequence.
+     * Times out after 5 seconds.
+     * 
+     * @throws IOException if timeout occurs or engine communication fails
      */
     private void waitForUciOk() throws IOException {
         String line;
@@ -161,7 +191,11 @@ public class StockfishEngine implements ChessEngine {
     }
 
     /**
-     * Waits for Stockfish to return "readyok".
+     * Waits for Stockfish to return "readyok" response.
+     * Used to synchronize before sending move search commands.
+     * Times out after 5 seconds.
+     * 
+     * @throws IOException if timeout occurs or engine communication fails
      */
     private void waitReady() throws IOException {
         sendCommand("isready");
@@ -177,6 +211,12 @@ public class StockfishEngine implements ChessEngine {
 
     /**
      * Reads all available engine output for a limited time.
+     * Buffers all output from the engine within the specified timeout period.
+     * Useful for collecting engine analysis output.
+     * 
+     * @param waitTimeMs the maximum time in milliseconds to wait for output
+     * @return all buffered output lines concatenated with newlines
+     * @throws IOException if reading from engine fails
      */
     private String getOutput(long waitTimeMs) throws IOException {
         StringBuilder buffer = new StringBuilder();
@@ -202,6 +242,10 @@ public class StockfishEngine implements ChessEngine {
 
     /**
      * Stops the Stockfish engine.
+     * Sends the quit command and waits for process termination.
+     * If process doesn't terminate gracefully, forces destruction.
+     * 
+     * @throws IOException if process termination fails
      */
     @Override
     public void stop() throws IOException {
@@ -218,6 +262,10 @@ public class StockfishEngine implements ChessEngine {
 
     /**
      * Closes the engine resource (implements AutoCloseable).
+     * Calls stop() to clean up the engine process.
+     * Can be used in try-with-resources statements.
+     * 
+     * @throws IOException if engine cleanup fails
      */
     @Override
     public void close() throws IOException {

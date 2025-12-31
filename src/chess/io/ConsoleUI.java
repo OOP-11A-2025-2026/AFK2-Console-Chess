@@ -213,14 +213,16 @@ public class ConsoleUI {
     }
 
     /**
-     * Displays check notification.
+     * Displays check notification to alert the player.
+     * Shows prominent visual warning that the king is in check.
      */
     public void displayCheck() {
         System.out.println(ANSI_RED + "*** Check! ***" + ANSI_RESET);
     }
 
     /**
-     * Displays the help menu.
+     * Displays the help menu with all available commands and move formats.
+     * Shows command descriptions and examples of different notation styles.
      */
     public void displayHelp() {
         System.out.println("\n" + ANSI_BLUE + "=== Available Commands ===" + ANSI_RESET);
@@ -241,7 +243,8 @@ public class ConsoleUI {
     }
 
     /**
-     * Displays a move that was made.
+     * Displays a move that was made in green color.
+     * Shows the player name and the move in algebraic notation.
      * 
      * @param move the move that was made
      * @param player the player who made the move
@@ -255,7 +258,9 @@ public class ConsoleUI {
     }
 
     /**
-     * Clears the screen (platform-dependent).
+     * Clears the screen (platform-dependent implementation).
+     * Uses ANSI escape codes on Unix/macOS and cls command on Windows.
+     * Falls back to printing newlines if platform detection fails.
      */
     public void clearScreen() {
         try {
@@ -273,7 +278,8 @@ public class ConsoleUI {
     }
 
     /**
-     * Closes the scanner and releases resources.
+     * Closes the scanner and releases all I/O resources.
+     * Should be called when the UI is no longer needed to prevent resource leaks.
      */
     public void close() {
         if (scanner != null) {
@@ -283,9 +289,10 @@ public class ConsoleUI {
 
     /**
      * Prompts yes/no question and returns the response.
+     * Accepts "yes", "y" (case-insensitive) as affirmative responses.
      * 
-     * @param prompt the question to ask
-     * @return true for yes, false for no
+     * @param prompt the question to ask the user
+     * @return true for yes/y, false for any other response
      */
     public boolean promptYesNo(String prompt) {
         System.out.print(ANSI_BLUE + prompt + " (yes/no): " + ANSI_RESET);
@@ -294,9 +301,10 @@ public class ConsoleUI {
     }
 
     /**
-     * Displays move history.
+     * Displays the complete move history of the game.
+     * Formats moves in pairs (white/black) with move numbers.
      * 
-     * @param game the game
+     * @param game the game whose move history should be displayed
      */
     public void displayMoveHistory(Game game) {
         if (game == null) {
@@ -318,9 +326,10 @@ public class ConsoleUI {
     }
 
     /**
-     * Displays undo availability hint.
+     * Displays undo availability hint to the player.
+     * Shows a helpful tip only when undo is available.
      * 
-     * @param canUndo whether undo is available
+     * @param canUndo whether undo is available for the current game state
      */
     public void displayUndoHint(boolean canUndo) {
         if (canUndo) {
@@ -329,14 +338,16 @@ public class ConsoleUI {
     }
 
     /**
-     * Displays successful undo confirmation.
+     * Displays successful undo confirmation message.
+     * Shows checkmark and confirmation that the last move was successfully undone.
      */
     public void displayUndoSuccess() {
         System.out.println(ANSI_GREEN + "✓ Move successfully undone" + ANSI_RESET);
     }
 
     /**
-     * Displays undo unavailable message.
+     * Displays message when undo is attempted but unavailable.
+     * Shows error indicating there are no moves to undo.
      */
     public void displayUndoUnavailable() {
         System.out.println(ANSI_RED + "✗ No moves to undo" + ANSI_RESET);

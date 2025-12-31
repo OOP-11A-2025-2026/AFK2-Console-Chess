@@ -15,19 +15,45 @@ public enum BotDifficulty {
     private final int skillLevel;
     private final int thinkingTimeMs;
 
+    /**
+     * Creates a BotDifficulty enum constant.
+     * Associates a Stockfish skill level and thinking time with a difficulty tier.
+     * 
+     * @param skillLevel the Stockfish skill level (0-20 range)
+     * @param thinkingTimeMs the recommended thinking time in milliseconds
+     */
     BotDifficulty(int skillLevel, int thinkingTimeMs) {
         this.skillLevel = skillLevel;
         this.thinkingTimeMs = thinkingTimeMs;
     }
 
+    /**
+     * Gets the Stockfish skill level for this difficulty.
+     * Skill levels range from 0 (weakest) to 20 (strongest).
+     * 
+     * @return the Stockfish skill level (0-20)
+     */
     public int getSkillLevel() {
         return skillLevel;
     }
 
+    /**
+     * Gets the recommended thinking time for this difficulty.
+     * This is used as a hint for time management in the game.
+     * 
+     * @return the thinking time in milliseconds
+     */
     public int getThinkingTimeMs() {
         return thinkingTimeMs;
     }
 
+    /**
+     * Gets the recommended search depth for this difficulty.
+     * Higher difficulties use deeper searches for stronger play.
+     * Depth is measured in half-moves (plies) for the engine search.
+     * 
+     * @return the recommended search depth
+     */
     public int getSearchDepth() {
         switch (this) {
             case BEGINNER:

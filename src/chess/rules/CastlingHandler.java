@@ -117,6 +117,15 @@ public class CastlingHandler {
         board.movePiece(targetRookPos, rookNewPos);
     }
 
+    /**
+     * Checks if the path between two positions is clear (no pieces blocking).
+     * Used to verify that squares between king and rook are empty for castling.
+     * 
+     * @param board the current board state
+     * @param from the starting position
+     * @param to the ending position
+     * @return true if all squares between from and to are empty, false otherwise
+     */
     private static boolean isPathClear(Board board, Position from, Position to) {
         int fileDir = Integer.compare(to.getFile(), from.getFile());
         int rankDir = Integer.compare(to.getRank(), from.getRank());

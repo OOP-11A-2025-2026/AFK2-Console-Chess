@@ -9,6 +9,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Manages the chess game state, move application, and PGN (Portable Game Notation) handling.
+ * Coordinates between the game logic, UI, and external engines like Stockfish.
+ */
 public class GameController
 {
 
@@ -22,6 +26,9 @@ public class GameController
     private ChessEngine engine;
     private BotDifficulty botDifficulty;
 
+    /**
+     * Creates a GameController with default PGN writer and parser.
+     */
     public GameController()
     {
         this.pgnWriter = new PgnWriter();
@@ -30,6 +37,15 @@ public class GameController
         this.metadata = new PgnGameMetadata();
     }
 
+    /**
+     * Creates a new chess game with specified players and optional starting FEN.
+     * Initializes game metadata and PGN tracking.
+     * 
+     * @param white the white player
+     * @param black the black player
+     * @param startingFen the starting position in FEN notation (null for standard starting position)
+     * @throws EngineException if players are invalid or game creation fails
+     */
     public synchronized void newGame(Player white, Player black, String startingFen) throws EngineException
     {
         Objects.requireNonNull(white, "white player must not be null");
@@ -66,6 +82,15 @@ public class GameController
         return s.trim();
     }
 
+    /**
+     * Applies an algebraic notation move to the current game.
+     * Converts SAN (Standard Algebraic Notation) to a legal move and applies it.
+     * Automatically updates PGN move record and game metadata.
+     * Requires an active game to be loaded.
+     * 
+     * @param san the move in Standard Algebraic Notation (e.g., "e4", "Nf3", "O-O")
+     * @throws EngineException if no game is loaded, move is invalid, or application fails
+     */
     public synchronized void applyAlgebraicMove(String san) throws EngineException
     {
         ensureGameLoaded();
@@ -137,6 +162,16 @@ public class GameController
         }
     }
 
+    /**
+     * Applies a coordinate-based move to the current game.
+     * Converts from/to square coordinates (e.g., "e2" to "e4") to a legal move.
+     * Automatically updates PGN move record and game metadata.
+     * Requires an active game to be loaded.
+     * 
+     * @param fromSquare the source square in algebraic notation (e.g., "e2")
+     * @param toSquare the destination square in algebraic notation (e.g., "e4")
+     * @throws EngineException if no game is loaded, move is invalid, or application fails
+     */
     public synchronized void applyCoordinateMove(String fromSquare, String toSquare) throws EngineException
     {
         ensureGameLoaded();
@@ -204,6 +239,15 @@ public class GameController
         updateResultTagFromGameState();
     }
 
+    /**
+     * Saves the current game to a PGN file.
+     * Includes all metadata tags and moves in standard PGN format.
+     * Updates the Result tag from current game state before saving.
+     * Requires an active game to be loaded.
+     * 
+     * @param file the output PGN file to write to
+     * @throws EngineException if no game is loaded or file I/O fails
+     */
     public synchronized void saveGame(File file) throws EngineException
     {
         ensureGameLoaded();
@@ -219,6 +263,14 @@ public class GameController
         }
     }
 
+    /**
+     * Loads a game from a PGN file.
+     * Parses metadata and all moves, then reconstructs the game by applying moves sequentially.
+     * Creates a new game with the players specified in the PGN metadata.
+     * 
+     * @param file the PGN file to load from
+     * @throws EngineException if file reading, parsing, or move application fails
+     */
     public synchronized void loadGame(File file) throws EngineException
     {
         Objects.requireNonNull(file, "file must not be null");
@@ -266,6 +318,14 @@ public class GameController
         }
     }
 
+    /**
+     * Records resignation of a player in the game.
+     * Updates game state to RESIGNATION and sets the Result tag accordingly.
+     * Requires an active game to be loaded.
+     * 
+     * @param p the player who is resigning
+     * @throws EngineException if no game is loaded or resignation fails
+     */
     public synchronized void resign(Player p) throws EngineException
     {
         ensureGameLoaded();
@@ -293,12 +353,27 @@ public class GameController
         metadata.setResult(resultTag);
     }
 
+    /**
+     * Determines the result tag value for a player's resignation.
+     * Returns "1-0" if white resigns (black wins), "0-1" if black resigns (white wins).
+     * 
+     * @param resigningPlayer the player who is resigning
+     * @return the PGN Result tag value
+     */
     private String determineResignResultTag(Player resigningPlayer)
     {
         if (resigningPlayer.getColor() == chess.core.Color.WHITE) {return "0-1";}
         else {return "1-0";}
     }
 
+    /**
+     * Records a draw offer from a player.
+     * Stores the player's name in the DrawOfferBy metadata tag.
+     * Requires an active game to be loaded.
+     * 
+     * @param byPlayer the player offering the draw
+     * @throws EngineException if no game is loaded
+     */
     public synchronized void offerDraw(Player byPlayer) throws EngineException
     {
         ensureGameLoaded();
@@ -306,6 +381,13 @@ public class GameController
         metadata.setTag("DrawOfferBy", byPlayer.getName());
     }
 
+    /**
+     * Accepts a pending draw offer.
+     * Sets the Result tag to "1/2-1/2" (draw) and updates game state.
+     * Requires an active game to be loaded.
+     * 
+     * @throws EngineException if no game is loaded
+     */
     public synchronized void acceptDraw() throws EngineException
     {
         ensureGameLoaded();
@@ -318,6 +400,13 @@ public class GameController
         catch (Exception ignored) { }
     }
 
+    /**
+     * Undoes the last move in the game.
+     * Calls the game's undo method and removes the last move from PGN records.
+     * Requires an active game to be loaded.
+     * 
+     * @throws EngineException if no game is loaded or undo fails
+     */
     public synchronized void undo() throws EngineException
     {
         ensureGameLoaded();
@@ -350,14 +439,44 @@ public class GameController
         }
     }
 
+    /**
+     * Gets a copy of the PGN move records.
+     * Returns an unmodifiable list of all moves in PGN format.
+     * 
+     * @return a list of PgnMoveRecord objects
+     */
     public synchronized List<PgnMoveRecord> getPgnMoves() {return new ArrayList<>(pgnMoves);}
 
+    /**
+     * Gets the current game metadata.
+     * Returns metadata tags such as Event, Site, Date, Round, White, Black, and Result.
+     * 
+     * @return the PgnGameMetadata instance
+     */
     public synchronized PgnGameMetadata getMetadata() {return metadata;}
 
+    /**
+     * Gets the currently active game.
+     * Returns null if no game is loaded.
+     * 
+     * @return the current Game instance, or null
+     */
     public synchronized Game getGame() {return game;}
 
+    /**
+     * Ensures a game is loaded before operations.
+     * Throws EngineException if no active game exists.
+     * 
+     * @throws EngineException if no game is currently loaded
+     */
     private void ensureGameLoaded() throws EngineException {if (this.game == null) throw new EngineException("No active game; call newGame(...) first");}
 
+    /**
+     * Attempts to get the last move in SAN notation from the game.
+     * Uses reflection to call Game.getLastMoveSan() if available.
+     * 
+     * @return the last move in SAN format, or null if method unavailable or no moves
+     */
     private String tryGetLastMoveSanFromGame()
     {
         try
@@ -370,6 +489,14 @@ public class GameController
         return null;
     }
 
+    /**
+     * Checks if it's white's turn to move according to the game.
+     * Uses reflection to call Game.isWhiteToMove() if available,
+     * otherwise checks the current player's color.
+     * Falls back to counting moves in the PGN record.
+     * 
+     * @return true if white is to move, false if black is to move
+     */
     private boolean isWhiteToMoveAccordingToGame()
     {
         try
@@ -398,6 +525,11 @@ public class GameController
         return (ply % 2) == 0;
     }
 
+    /**
+     * Updates the PGN Result tag based on the current game state.
+     * Analyzes checkmate, stalemate, resignation, and draw conditions,
+     * and sets the appropriate PGN result code.
+     */
     private void updateResultTagFromGameState()
     {
         try
@@ -448,7 +580,11 @@ public class GameController
     }
 
     /**
-     * Initializes the bot engine with the given difficulty.
+     * Initializes the bot engine with the given difficulty level.
+     * Starts the Stockfish process and sets the appropriate skill level.
+     * 
+     * @param difficulty the BotDifficulty level (BEGINNER to GRANDMASTER)
+     * @throws EngineException if engine startup fails
      */
     public synchronized void initializeBot(BotDifficulty difficulty) throws EngineException {
         try {
@@ -462,7 +598,11 @@ public class GameController
     }
 
     /**
-     * Gets the best move from the bot for the current position.
+     * Gets the best move from the bot for the current game position.
+     * Calculates appropriate search depth based on difficulty and queries the engine.
+     * 
+     * @return the best move in UCI format (e.g., "e2e4")
+     * @throws EngineException if bot is not initialized or move calculation fails
      */
     public synchronized String getBotMove() throws EngineException {
         if (engine == null) {
@@ -483,7 +623,11 @@ public class GameController
     }
 
     /**
-     * Calculates search depth based on difficulty level.
+     * Calculates appropriate search depth for the engine based on difficulty level.
+     * Higher difficulties use deeper searches for stronger play.
+     * 
+     * @param difficulty the BotDifficulty level
+     * @return the recommended search depth (typically 5-35)
      */
     private int calculateDepthFromDifficulty(BotDifficulty difficulty) {
         switch (difficulty) {
@@ -505,7 +649,10 @@ public class GameController
     }
 
     /**
-     * Shuts down the bot engine.
+     * Shuts down the bot engine and releases resources.
+     * Should be called when the bot is no longer needed.
+     * 
+     * @throws EngineException if engine shutdown fails
      */
     public synchronized void shutdownBot() throws EngineException {
         if (engine != null) {
@@ -519,7 +666,9 @@ public class GameController
     }
 
     /**
-     * Checks if bot is initialized.
+     * Checks if the bot engine is currently initialized and running.
+     * 
+     * @return true if bot is ready to play, false otherwise
      */
     public synchronized boolean isBotInitialized() {
         return engine != null;

@@ -54,6 +54,13 @@ public class MoveValidator {
 
     /**
      * Checks if a move would leave the player's own king in check.
+     * Simulates the move on a board copy and checks if the player's king remains safe.
+     * Handles special cases like en passant captures.
+     * 
+     * @param board the current board state
+     * @param move the move to simulate
+     * @param playerColor the color of the player making the move
+     * @return true if the move would leave own king in check, false if it's safe
      */
     private static boolean wouldLeaveKingInCheck(Board board, Move move, Color playerColor) {
         Board boardCopy = board.copy();
@@ -81,7 +88,11 @@ public class MoveValidator {
     }
 
     /**
-     * Checks if a destination has a piece to capture.
+     * Checks if a destination square has an enemy piece to capture.
+     * 
+     * @param board the current board state
+     * @param to the destination position to check
+     * @return true if there is a piece at the destination, false if square is empty
      */
     public static boolean hasCapture(Board board, Position to) {
         if (board == null || to == null) {
@@ -92,6 +103,13 @@ public class MoveValidator {
 
     /**
      * Checks if the path between two positions is clear (used for sliding pieces).
+     * Verifies that no pieces block the straight line (horizontal, vertical, or diagonal)
+     * between the from and to positions. Used for rooks, bishops, and queens.
+     * 
+     * @param board the current board state
+     * @param from the starting position
+     * @param to the destination position
+     * @return true if all squares between from and to are empty, false if blocked
      */
     public static boolean isPathClear(Board board, Position from, Position to) {
         if (board == null || from == null || to == null) {
@@ -120,7 +138,14 @@ public class MoveValidator {
     }
 
     /**
-     * Checks if a position is attacked by the opponent.
+     * Checks if a position is attacked by any opponent piece.
+     * Iterates through all opponent pieces and checks if any can legally attack the position.
+     * Used to determine check and validate castling legality.
+     * 
+     * @param board the current board state
+     * @param pos the position to check for attacks
+     * @param opponentColor the color of the potential attacker
+     * @return true if the position is attacked by at least one opponent piece, false otherwise
      */
     public static boolean isPositionAttacked(Board board, Position pos, Color opponentColor) {
         if (board == null || pos == null || opponentColor == null) {
@@ -147,6 +172,12 @@ public class MoveValidator {
     /**
      * Determines whether a particular piece attacks a target square without
      * invoking piece.getLegalDestinations (avoids recursion with King).
+     * 
+     * @param board the current board state
+     * @param from the position of the attacking piece
+     * @param target the target position to check
+     * @param piece the piece to check
+     * @return true if the piece attacks the target square, false otherwise
      */
     private static boolean isSquareAttackedByPiece(Board board, Position from, Position target, Piece piece) {
         String className = piece.getClass().getSimpleName();

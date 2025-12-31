@@ -40,7 +40,11 @@ public class BoardPrinter {
     }
 
     /**
-     * Prints a simplified board without borders.
+     * Prints a simplified board without borders for compact display.
+     * Displays the board as a grid with dots for empty squares and piece symbols.
+     * Useful for logging or simple console output.
+     * 
+     * @param board the board to print
      */
     public static void printBoardSimple(Board board) {
         if (board == null) {
@@ -64,7 +68,11 @@ public class BoardPrinter {
     }
 
     /**
-     * Gets a string representation of the board.
+     * Gets a string representation of the board without printing to console.
+     * Returns the board visualization as a formatted string for logging or other uses.
+     * 
+     * @param board the board to convert to string
+     * @return formatted string representation of the board
      */
     public static String getBoardAsString(Board board) {
         if (board == null) {
@@ -94,7 +102,12 @@ public class BoardPrinter {
     }
 
     /**
-     * Prints the board with coordinates highlighted.
+     * Prints the board with a specific position highlighted for visual reference.
+     * Displays brackets around the piece at the specified position.
+     * Useful for showing the current move or selected piece.
+     * 
+     * @param board the board to print
+     * @param highlightPosition the position to highlight, or null for no highlighting
      */
     public static void printBoardWithHighlight(Board board, Position highlightPosition) {
         if (board == null) {

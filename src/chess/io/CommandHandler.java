@@ -116,6 +116,14 @@ public class CommandHandler {
         }
     }
 
+    /**
+     * Handles a move input string.
+     * Parses the move notation, validates legality, saves game state for undo,
+     * applies the move, and updates game state (check/checkmate/stalemate).
+     * 
+     * @param moveInput the move in coordinate or algebraic notation
+     * @return true to continue game loop, false to exit
+     */
     private boolean handleMove(String moveInput) {
         if (currentGame == null) {
             ui.displayError("No game in progress. Start a new game first.");
@@ -160,9 +168,10 @@ public class CommandHandler {
     /**
      * Applies a move to the current game.
      * This is a simplified placeholder that needs to be integrated with the game controller.
+     * Currently returns false to indicate move application is not yet fully implemented.
      * 
-     * @param moveBuilder the move builder
-     * @return true if move was successful, false otherwise
+     * @param moveBuilder the move builder with source and destination positions
+     * @return true if move was successfully applied, false otherwise
      */
     private boolean applyMove(Move.Builder moveBuilder) {
         // For now, return false to indicate move application is not yet fully implemented
@@ -171,7 +180,10 @@ public class CommandHandler {
     }
 
     /**
-     * Updates the game state (check, checkmate, stalemate).
+     * Updates the game state after a move (check, checkmate, stalemate).
+     * Uses CheckDetector to analyze the current board position
+     * and updates the game's GameState accordingly.
+     * Currently a placeholder for full implementation.
      */
     private void updateGameState() {
         if (currentGame == null) {
@@ -183,7 +195,11 @@ public class CommandHandler {
     }
 
     /**
-     * Handles creating a new game.
+     * Handles the new game command.
+     * Prompts for player names and initializes a new chess game with 5-minute time control.
+     * Clears undo manager and en passant handler state.
+     * 
+     * @return true to continue game loop, false to exit
      */
     private boolean handleNewGame() {
         System.out.print("White player name (default: White): ");
@@ -212,6 +228,10 @@ public class CommandHandler {
 
     /**
      * Handles loading a game from file.
+     * Prompts for filename if not provided and verifies file exists before loading.
+     * 
+     * @param filename the filename to load, or null to prompt user
+     * @return true to continue game loop, false to exit
      */
     private boolean handleLoadGame(String filename) {
         if (filename == null || filename.isEmpty()) {
@@ -239,7 +259,11 @@ public class CommandHandler {
     }
 
     /**
-     * Handles saving a game to file.
+     * Handles the save command to save the current game to a PGN file.
+     * Prompts for filename if not provided. Requires an active game.
+     * 
+     * @param filename the filename to save to, or null to prompt user
+     * @return true to continue game loop, false to exit
      */
     private boolean handleSaveGame(String filename) {
         if (currentGame == null) {
@@ -266,7 +290,11 @@ public class CommandHandler {
     }
 
     /**
-     * Handles resignation.
+     * Handles the resign command.
+     * Prompts for confirmation before accepting resignation.
+     * Sets game state to RESIGNATION and displays result.
+     * 
+     * @return true to continue game loop, false to exit
      */
     private boolean handleResign() {
         if (currentGame == null) {
@@ -284,7 +312,10 @@ public class CommandHandler {
     }
 
     /**
-     * Handles draw offer.
+     * Handles the draw command to offer a draw to the opponent.
+     * Sets the draw offer pending flag in the game state.
+     * 
+     * @return true to continue game loop, false to exit
      */
     private boolean handleDrawOffer() {
         if (currentGame == null) {
@@ -298,7 +329,10 @@ public class CommandHandler {
     }
 
     /**
-     * Handles accepting a draw.
+     * Handles the accept command to accept a pending draw offer.
+     * Requires that a draw offer exists. Sets game state to DRAW_BY_AGREEMENT.
+     * 
+     * @return true to continue game loop, false to exit
      */
     private boolean handleDrawAccept() {
         if (currentGame == null) {
@@ -318,7 +352,11 @@ public class CommandHandler {
     }
 
     /**
-     * Handles undo command.
+     * Handles the undo command to revert the last move.
+     * Uses the undo manager to restore the previous game state.
+     * Redisplays the board after undo.
+     * 
+     * @return true to continue game loop, false to exit
      */
     private boolean handleUndo() {
         if (currentGame == null) {
@@ -337,7 +375,10 @@ public class CommandHandler {
     }
 
     /**
-     * Handles exit command.
+     * Handles the exit command to terminate the application.
+     * Prompts for confirmation if a game is in progress.
+     * 
+     * @return false to signal exit from game loop, true to continue
      */
     private boolean handleExit() {
         if (currentGame != null) {
@@ -350,14 +391,18 @@ public class CommandHandler {
     }
 
     /**
-     * Gets the current game.
+     * Gets the current active game.
+     * 
+     * @return the current Game, or null if no game is in progress
      */
     public Game getCurrentGame() {
         return currentGame;
     }
 
     /**
-     * Displays the current game state.
+     * Displays the current game state to the console.
+     * Shows the board, player information, and other game details.
+     * Displays a message if no game is in progress.
      */
     public void displayGameState() {
         if (currentGame == null) {

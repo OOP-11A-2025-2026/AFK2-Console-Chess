@@ -52,38 +52,84 @@ public class Game {
         // FEN parsing not yet fully implemented; would need FenUtil enhancement
     }
 
+    /**
+     * Gets the chess board.
+     * 
+     * @return the Board instance
+     */
     public Board getBoard() {
         return board;
     }
 
+    /**
+     * Gets the white player.
+     * 
+     * @return the white Player
+     */
     public Player getWhitePlayer() {
         return whitePlayer;
     }
 
+    /**
+     * Gets the black player.
+     * 
+     * @return the black Player
+     */
     public Player getBlackPlayer() {
         return blackPlayer;
     }
 
+    /**
+     * Gets the current player whose turn it is.
+     * 
+     * @return the current Player
+     */
     public Player getCurrentPlayer() {
         return currentPlayer == Color.WHITE ? whitePlayer : blackPlayer;
     }
 
+    /**
+     * Gets the color of the current player.
+     * 
+     * @return WHITE or BLACK
+     */
     public Color getCurrentPlayerColor() {
         return currentPlayer;
     }
 
+    /**
+     * Gets the chess clock for this game.
+     * 
+     * @return the ChessClock instance
+     */
     public ChessClock getClock() {
         return clock;
     }
 
+    /**
+     * Gets a copy of the move history.
+     * 
+     * @return a list of all moves made in this game
+     */
     public List<Move> getMoveHistory() {
         return new ArrayList<>(moveHistory);
     }
 
+    /**
+     * Gets the current state of the game.
+     * 
+     * @return the GameState (ONGOING, CHECK, CHECKMATE, STALEMATE, etc.)
+     */
     public GameState getGameState() {
         return gameState;
     }
 
+    /**
+     * Sets the game state.
+     * 
+     * @param state the new GameState
+     * @throws IllegalArgumentException if state is null
+     */
     public void setGameState(GameState state) {
         if (state == null) {
             throw new IllegalArgumentException("Game state must not be null");
@@ -91,10 +137,20 @@ public class Game {
         this.gameState = state;
     }
 
+    /**
+     * Checks if a draw offer is currently pending.
+     * 
+     * @return true if a draw has been offered, false otherwise
+     */
     public boolean isDrawOfferPending() {
         return drawOfferPending;
     }
 
+    /**
+     * Gets the color of the player who offered the draw.
+     * 
+     * @return the color (WHITE or BLACK), or null if no draw is pending
+     */
     public Color getDrawOfferer() {
         return drawOfferer;
     }
@@ -125,7 +181,10 @@ public class Game {
     }
 
     /**
-     * Adds a move to the history and switches the current player.
+     * Adds a move to the game history and switches to the other player.
+     * 
+     * @param move the move to add
+     * @throws IllegalArgumentException if move is null
      */
     public void addMove(Move move) {
         if (move == null) {
@@ -135,20 +194,24 @@ public class Game {
         switchPlayer();
     }
 
+    /**
+     * Clears any pending draw offer.
+     */
     public void clearDrawOffer() {
         this.drawOfferPending = false;
         this.drawOfferer = null;
     }
 
     /**
-     * Switches the current player.
+     * Switches the current player to the other color.
      */
     public void switchPlayer() {
         currentPlayer = currentPlayer.opposite();
     }
 
     /**
-     * Undoes the last move and reverts the current player.
+     * Undoes the last move from the move history and reverts the current player.
+     * Also clears any pending draw offer.
      */
     public void undoLastMove() {
         if (!moveHistory.isEmpty()) {
@@ -577,28 +640,37 @@ public class Game {
     }
 
     /**
-     * Checks if it's white's turn.
+     * Checks if it's white's turn to move.
+     * 
+     * @return true if white is the current player, false otherwise
      */
     public boolean isWhiteToMove() {
         return currentPlayer == Color.WHITE;
     }
 
     /**
-     * Gets the state (alias for getGameState for compatibility).
+     * Gets the state of the game (alias for getGameState for compatibility).
+     * 
+     * @return the GameState
      */
     public GameState getState() {
         return gameState;
     }
 
     /**
-     * Sets the state (alias for setGameState for compatibility).
+     * Sets the state of the game (alias for setGameState for compatibility).
+     * 
+     * @param state the new GameState
      */
     public void setState(GameState state) {
         setGameState(state);
     }
 
     /**
-     * Gets the winner (for completed games).
+     * Gets the winner of a completed game.
+     * Returns the winner if the game ended in checkmate or resignation.
+     * 
+     * @return the winning Player, or null if the game is still ongoing
      */
     public Player getWinner() {
         if (gameState == GameState.CHECKMATE) {
@@ -613,7 +685,8 @@ public class Game {
     }
 
     /**
-     * Resigns from the game.
+     * Resigns from the game on behalf of the current player.
+     * Sets the game state to RESIGNATION.
      */
     public void resign() {
             setGameState(GameState.RESIGNATION);
@@ -628,7 +701,8 @@ public class Game {
     }
     
     /**
-     * Resets the game to initial state.
+     * Resets the game to its initial state.
+     * Clears the board, move history, and restarts the clock.
      */
     public void reset() {
         board.reset();

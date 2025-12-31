@@ -6,12 +6,27 @@ import java.util.List;
 
 /**
  * Represents a king piece.
+ * Kings move one square in any direction and can castle under specific conditions.
  */
 public class King extends Piece {
+    /**
+     * Creates a king piece.
+     * 
+     * @param color the color of the king (WHITE or BLACK)
+     * @param position the initial position of the king
+     */
     public King(Color color, Position position) {
         super(color, position);
     }
 
+    /**
+     * Gets all legal destinations for this king from its current position.
+     * Kings can move one square in any direction (horizontally, vertically, or diagonally)
+     * and can also castle if conditions are met.
+     * 
+     * @param board the current board state
+     * @return list of legal destination positions
+     */
     @Override
     public List<Position> getLegalDestinations(Board board) {
         List<Position> destinations = new ArrayList<>();
@@ -82,6 +97,13 @@ public class King extends Piece {
         return destinations;
     }
 
+    /**
+     * Creates a copy of this king at a given position.
+     * Preserves the movement history (hasMoved flag) of the original king.
+     * 
+     * @param pos the position for the copied king
+     * @return a new King instance with the same color and movement history
+     */
     @Override
     public Piece copy(Position pos) {
         King copy = new King(color, pos);
@@ -89,6 +111,11 @@ public class King extends Piece {
         return copy;
     }
 
+    /**
+     * Gets the Unicode symbol representing this king.
+     * 
+     * @return white king (♔) for white, black king (♚) for black
+     */
     @Override
     public char getSymbol() {
         return color == Color.WHITE ? '♔' : '♚';

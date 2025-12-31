@@ -6,12 +6,26 @@ import java.util.List;
 
 /**
  * Represents a rook piece.
+ * Rooks move horizontally or vertically any number of squares until blocked.
  */
 public class Rook extends Piece {
+    /**
+     * Creates a rook piece.
+     * 
+     * @param color the color of the rook (WHITE or BLACK)
+     * @param position the initial position of the rook
+     */
     public Rook(Color color, Position position) {
         super(color, position);
     }
 
+    /**
+     * Gets all legal destinations for this rook from its current position.
+     * Rooks move horizontally or vertically any number of squares until blocked by a piece.
+     * 
+     * @param board the current board state
+     * @return list of legal destination positions
+     */
     @Override
     public List<Position> getLegalDestinations(Board board) {
         List<Position> destinations = new ArrayList<>();
@@ -53,6 +67,13 @@ public class Rook extends Piece {
         }
     }
 
+    /**
+     * Creates a copy of this rook at a given position.
+     * Preserves the movement history (hasMoved flag) of the original rook.
+     * 
+     * @param pos the position for the copied rook
+     * @return a new Rook instance with the same color and movement history
+     */
     @Override
     public Piece copy(Position pos) {
         Rook copy = new Rook(color, pos);
@@ -60,6 +81,11 @@ public class Rook extends Piece {
         return copy;
     }
 
+    /**
+     * Gets the Unicode symbol representing this rook.
+     * 
+     * @return white rook (♖) for white, black rook (♜) for black
+     */
     @Override
     public char getSymbol() {
         return color == Color.WHITE ? '♖' : '♜';
