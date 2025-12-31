@@ -372,10 +372,17 @@ public class Main {
                 }
             }
 
-            // Check for compact coordinate notation (e.g., "e2e4")
-            if (moveInput.length() == 4 && moveInput.matches("[a-h][1-8][a-h][1-8]")) {
+            // Check for compact coordinate notation (e.g., "e2e4" or "e2e1=Q")
+            if (moveInput.matches("[a-h][1-8][a-h][1-8](?:=[QRBN])?")) {
                 String from = moveInput.substring(0, 2);
                 String to = moveInput.substring(2, 4);
+                
+                // Extract promotion piece if present (e.g., "=Q")
+                Class<?> promotionType = null;
+                if (moveInput.length() > 4 && moveInput.charAt(4) == '=') {
+                    char promotionChar = moveInput.charAt(5);
+                    promotionType = chess.rules.PromotionHandler.parsePromotionChoice(promotionChar);
+                }
 
                 String castleSan = AlgebraicNotationUtil.convertCastlingCoordinateToSan(from, to);
                 try {
@@ -383,8 +390,18 @@ public class Main {
                         currentGame.applySan(castleSan);
                         ui.displayMessage("Move: " + castleSan);
                     } else {
-                        currentGame.applyMove(from, to);
-                        ui.displayMessage("Move: " + from + " → " + to);
+                        Position fromPos = chess.core.Position.fromAlgebraic(from);
+                        Position toPos = chess.core.Position.fromAlgebraic(to);
+                        chess.core.Piece piece = currentGame.getBoard().getPiece(fromPos);
+                        chess.core.Piece capturedPiece = currentGame.getBoard().getPiece(toPos);
+                        
+                        chess.core.Move move = new chess.core.Move.Builder(fromPos, toPos, piece)
+                                .capturedPiece(capturedPiece)
+                                .promotion(promotionType)
+                                .build();
+                        
+                        currentGame.applyMove(move);
+                        ui.displayMessage("Move: " + moveInput);
                     }
                     return true;
                 } catch (IllegalArgumentException e) {

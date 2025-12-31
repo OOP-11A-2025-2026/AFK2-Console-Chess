@@ -235,6 +235,11 @@ public class Game {
             board.movePiece(move.getFrom(), move.getTo());
         }
         
+        // Handle pawn promotion
+        if (move.isPromotion() && move.getPromotionTarget() != null) {
+            chess.rules.PromotionHandler.promotePawn(board, move.getTo(), move.getPromotionTarget());
+        }
+        
         addMove(move);
     }
 
