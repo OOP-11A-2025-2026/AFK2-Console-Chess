@@ -27,7 +27,7 @@ help:
 compile:
 	@echo "Compiling Java source files..."
 	@mkdir -p $(BIN_DIR)
-	@$(JAVAC) $(JFLAGS) $(SRC_DIR)/chess/**/*.java
+	@find $(SRC_DIR) -name "*.java" | xargs $(JAVAC) $(JFLAGS)
 	@echo "✓ Compilation complete"
 
 # Run the main chess game

@@ -7,7 +7,12 @@ import chess.util.*;
 import chess.engine.*;
 import chess.pgn.*;
 import java.io.File;
+import java.io.IOException;
 import java.util.Scanner;
+import java.util.List;
+import java.util.Random;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 /**
  * Main entry point for the AFK2 Console Chess application.
@@ -20,6 +25,7 @@ public class Main {
     private static CheckDetector checkDetector;
     private static GameController gameController;
     private static Scanner scanner;
+    private static Random random;
 
     public static void main(String[] args) {
         ui = new ConsoleUI();
@@ -27,6 +33,7 @@ public class Main {
         checkDetector = new CheckDetector();
         gameController = new GameController();
         scanner = new Scanner(System.in);
+        random = new Random();
 
         ui.displayWelcome();
         
@@ -98,6 +105,7 @@ public class Main {
         try {
             currentGame = new Game(white, black, clock);
             undoManager.clear();
+            undoManager.saveSnapshot(currentGame);  // Save initial board state
             ui.displayMessage("Game started!");
             ui.displayBoard(currentGame.getBoard());
         } catch (Exception e) {
@@ -173,6 +181,7 @@ public class Main {
             ui.displayMessage("Bot initialized (" + difficulty.name() + ")");
             
             undoManager.clear();
+            undoManager.saveSnapshot(currentGame);  // Save initial board state
             ui.displayMessage("Game started! Playing as " + playerColor.name() + " against " + difficulty.name() + " bot");
             ui.displayBoard(currentGame.getBoard());
 
@@ -211,6 +220,7 @@ public class Main {
             
             if (currentGame != null) {
                 undoManager.clear();
+                undoManager.saveSnapshot(currentGame);  // Save initial board state
                 ui.displayMessage("Game loaded from " + filename);
                 ui.displayBoard(currentGame.getBoard());
                 ui.displayGameInfo(currentGame);
@@ -246,8 +256,8 @@ public class Main {
             ui.displayCheck();
         }
 
-        // Display undo hint if moves are available
-        if (undoManager.canUndo()) {
+        // Display undo hint if moves are available (10% random chance)
+        if (undoManager.canUndo() && random.nextInt(100) < 10) {
             ui.displayUndoHint(true);
         }
 
@@ -444,9 +454,10 @@ public class Main {
 
     /**
      * Handles undo command.
+     * Undoes both the opponent's last move and the player's own last move.
      */
     private static void handleUndo() {
-        if (undoManager.undo(currentGame)) {
+        if (undoManager.undoFullTurn(currentGame)) {
             ui.displayUndoSuccess();
             ui.displayBoard(currentGame.getBoard());
             ui.displayGameInfo(currentGame);
@@ -579,16 +590,97 @@ public class Main {
     }
 
     /**
-     * Saves a game (placeholder).
+     * Saves a game to a PGN file.
+     * Validates game state, creates metadata, converts moves to SAN, and writes to file.
      */
     private static void saveGame(String fullInput) {
+        // Validate game state
+        if (currentGame == null) {
+            ui.displayError("No game to save");
+            return;
+        }
+
+        // Extract filename
         String filename = InputParser.extractFilename(fullInput);
         if (filename == null || filename.isEmpty()) {
             System.out.print("Enter filename to save: ");
             filename = scanner.nextLine().trim();
         }
-        if (!filename.isEmpty()) {
+
+        if (filename.isEmpty()) {
+            ui.displayError("Filename required");
+            return;
+        }
+
+        try {
+            // Ensure .pgn extension
+            if (!filename.toLowerCase().endsWith(".pgn")) {
+                filename += ".pgn";
+            }
+
+            // Create PGN metadata
+            PgnGameMetadata metadata = new PgnGameMetadata();
+            metadata.setEvent("Casual Game");
+            metadata.setSite("AFK2 Chess");
+            metadata.setDate(LocalDate.now().format(DateTimeFormatter.ISO_DATE));
+            metadata.setRound("1");
+            metadata.setWhite(currentGame.getWhitePlayer().getName());
+            metadata.setBlack(currentGame.getBlackPlayer().getName());
+
+            // Determine result
+            String result = "?";
+            switch (currentGame.getGameState()) {
+                case CHECKMATE:
+                    result = currentGame.getCurrentPlayerColor() == Color.BLACK ? "1-0" : "0-1";
+                    break;
+                case STALEMATE:
+                    result = "1/2-1/2";
+                    break;
+                case DRAW_BY_AGREEMENT:
+                    result = "1/2-1/2";
+                    break;
+                case RESIGNATION:
+                    result = currentGame.getCurrentPlayerColor() == Color.WHITE ? "0-1" : "1-0";
+                    break;
+                case TIME_OUT:
+                    result = currentGame.getCurrentPlayerColor() == Color.WHITE ? "0-1" : "1-0";
+                    break;
+                case ONGOING:
+                case CHECK:
+                    result = "*";
+                    break;
+            }
+            metadata.setResult(result);
+
+            // Convert move history to PGN move records
+            List<Move> moveHistory = currentGame.getMoveHistory();
+            List<PgnMoveRecord> pgnMoves = new java.util.ArrayList<>();
+
+            for (int i = 0; i < moveHistory.size(); i += 2) {
+                int moveNumber = (i / 2) + 1;
+                Move whiteMove = moveHistory.get(i);
+                String whiteSan = currentGame.moveToSan(whiteMove);
+
+                String blackSan = null;
+                if (i + 1 < moveHistory.size()) {
+                    Move blackMove = moveHistory.get(i + 1);
+                    blackSan = currentGame.moveToSan(blackMove);
+                }
+
+                pgnMoves.add(new PgnMoveRecord(moveNumber, whiteSan, blackSan));
+            }
+
+            // Write to file
+            PgnWriter writer = new PgnWriter();
+            File file = new File(filename);
+            writer.write(file, metadata, pgnMoves);
+
             ui.displayMessage("Game saved to " + filename);
+
+        } catch (IOException e) {
+            ui.displayError("Failed to save game: " + e.getMessage());
+        } catch (Exception e) {
+            ui.displayError("Error saving game: " + e.getMessage());
         }
     }
 

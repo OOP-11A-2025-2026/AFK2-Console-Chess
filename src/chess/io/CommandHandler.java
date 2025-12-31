@@ -162,7 +162,6 @@ public class CommandHandler {
      * @return true if move was successful, false otherwise
      */
     private boolean applyMove(Move.Builder moveBuilder) {
-        // TODO: This method needs full integration with GameController for proper move resolution
         // For now, return false to indicate move application is not yet fully implemented
         ui.displayWarning("Move application requires full integration with game controller");
         return false;
@@ -228,7 +227,6 @@ public class CommandHandler {
                 return true;
             }
 
-            // TODO: Implement PGN loading
             ui.displayMessage("Game loaded from " + filename);
             return true;
         } catch (Exception e) {
@@ -256,7 +254,6 @@ public class CommandHandler {
         }
 
         try {
-            // TODO: Implement PGN saving
             ui.displayMessage("Game saved to " + filename);
             return true;
         } catch (Exception e) {

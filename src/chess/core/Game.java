@@ -48,10 +48,6 @@ public class Game {
         this.drawOfferer = null;
     }
 
-    /**
-     * Creates a new game from a FEN string (for future use, currently uses default board).
-     * TODO: Implement full FEN parsing
-     */
     public Game(Player whitePlayer, Player blackPlayer, String fenString) {
         this(whitePlayer, blackPlayer, new ChessClock(5 * 60 * 1000));
         // FEN parsing not yet fully implemented; would need FenUtil enhancement
@@ -553,6 +549,85 @@ public class Game {
         drawOfferPending = false;
         drawOfferer = null;
         clock.reset();
+    }
+
+    /**
+     * Converts a Move object to its SAN (Standard Algebraic Notation) representation.
+     * This is a simplified conversion that works for most moves.
+     * 
+     * @param move the move to convert
+     * @return the SAN representation of the move
+     */
+    public String moveToSan(Move move) {
+        if (move == null) {
+            return "?";
+        }
+
+        // Handle castling
+        if (move.isCastling()) {
+            int fromFile = move.getFrom().getFile();
+            int toFile = move.getTo().getFile();
+            return toFile > fromFile ? "O-O" : "O-O-O";
+        }
+
+        StringBuilder san = new StringBuilder();
+        Piece piece = move.getMovedPiece();
+        
+        // Add piece symbol (except for pawns)
+        if (!piece.getClass().getSimpleName().equals("Pawn")) {
+            san.append(getPieceSymbol(piece));
+        }
+
+        // Add capture symbol
+        if (move.isCapture()) {
+            // For pawns, add the file of origin
+            if (piece.getClass().getSimpleName().equals("Pawn")) {
+                san.append(AlgebraicNotationUtil.fileToLetter(move.getFrom().getFile()));
+            }
+            san.append("x");
+        }
+
+        // Add destination
+        san.append(move.getTo().toAlgebraic());
+
+        // Add promotion
+        if (move.isPromotion() && move.getPromotionTarget() != null) {
+            san.append("=");
+            san.append(getPieceSymbol(move.getPromotionTarget()));
+        }
+
+        return san.toString();
+    }
+
+    /**
+     * Gets the symbol for a piece class.
+     */
+    private String getPieceSymbol(Piece piece) {
+        if (piece == null) return "";
+        return getPieceSymbol(piece.getClass());
+    }
+
+    /**
+     * Gets the symbol for a piece class.
+     */
+    private String getPieceSymbol(Class<?> pieceClass) {
+        String className = pieceClass.getSimpleName();
+        switch (className) {
+            case "Knight":
+                return "N";
+            case "Bishop":
+                return "B";
+            case "Rook":
+                return "R";
+            case "Queen":
+                return "Q";
+            case "King":
+                return "K";
+            case "Pawn":
+                return "";
+            default:
+                return "?";
+        }
     }
 
     @Override

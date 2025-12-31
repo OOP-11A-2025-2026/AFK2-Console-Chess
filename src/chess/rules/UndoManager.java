@@ -101,6 +101,38 @@ public class UndoManager {
     }
 
     /**
+     * Undoes both the opponent's last move and the player's last move (a full turn).
+     * This is useful for undoing in a two-player game where you want to go back to before your move.
+     * 
+     * @param game the game to undo
+     * @return true if undo was successful, false if fewer than 2 snapshots available
+     */
+    public boolean undoFullTurn(Game game) {
+        if (game == null) {
+            throw new IllegalArgumentException("Game must not be null");
+        }
+
+        // Need at least 2 snapshots to undo a full turn (one for opponent's move, one for player's move)
+        if (snapshots.size() < 2) {
+            return false;
+        }
+
+        // Remove the most recent snapshot (opponent's last move)
+        snapshots.remove(snapshots.size() - 1);
+        
+        // Remove the next snapshot (player's last move)
+        snapshots.remove(snapshots.size() - 1);
+        
+        // Restore to the last remaining snapshot (state before player's move)
+        if (!snapshots.isEmpty()) {
+            GameSnapshot snapshot = snapshots.get(snapshots.size() - 1);
+            snapshot.restoreToGame(game);
+        }
+        
+        return true;
+    }
+
+    /**
      * Checks if an undo is available.
      * 
      * @return true if at least one snapshot exists
