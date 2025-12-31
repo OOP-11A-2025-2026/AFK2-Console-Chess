@@ -189,6 +189,16 @@ public class Game {
         }
 
         Piece capturedPiece = board.getPiece(to);
+        
+        // Handle en passant: if a pawn moves diagonally to an empty square,
+        // the captured piece is on a different square
+        if (capturedPiece == null && piece instanceof chess.pieces.Pawn && 
+            from.getFile() != to.getFile() && from.getRank() != to.getRank()) {
+            // This might be en passant - check for pawn on same rank as source, same file as destination
+            Position capturedPawnPos = new Position(to.getFile(), from.getRank());
+            capturedPiece = board.getPiece(capturedPawnPos);
+        }
+        
         Move move = new Move.Builder(from, to, piece)
                 .capturedPiece(capturedPiece)
                 .build();
@@ -233,6 +243,19 @@ public class Game {
         } else {
             // Normal move
             board.movePiece(move.getFrom(), move.getTo());
+            
+            // Handle en passant: remove the captured pawn if it's on a different square
+            if (move.isCapture() && move.getCapturedPiece() instanceof chess.pieces.Pawn) {
+                if (move.getFrom().getFile() != move.getTo().getFile() && 
+                    move.getFrom().getRank() != move.getTo().getRank()) {
+                    // This is a diagonal pawn move
+                    Position capturedPawnPos = new Position(move.getTo().getFile(), move.getFrom().getRank());
+                    if (board.getPiece(capturedPawnPos) == move.getCapturedPiece()) {
+                        // This is en passant - remove the pawn
+                        board.removePiece(capturedPawnPos);
+                    }
+                }
+            }
         }
         
         // Handle pawn promotion
@@ -396,6 +419,17 @@ public class Game {
                     // Check if piece can move to destination
                     if (piece.getLegalDestinations(board).contains(toPos)) {
                         Piece captured = board.getPiece(toPos);
+                        
+                        // Handle en passant: if a pawn moves diagonally to an empty square,
+                        // the captured piece is on a different square
+                        if (captured == null && piece instanceof chess.pieces.Pawn && 
+                            pos.getFile() != toPos.getFile() && pos.getRank() != toPos.getRank()) {
+                            // This is likely an en passant capture
+                            // The captured pawn is on the same file as destination, same rank as source
+                            Position capturedPos = new Position(toPos.getFile(), pos.getRank());
+                            captured = board.getPiece(capturedPos);
+                        }
+                        
                         Move move = new Move.Builder(pos, toPos, piece)
                                 .capturedPiece(captured)
                                 .promotion(promotionType)
@@ -443,6 +477,58 @@ public class Game {
             // Return first valid candidate
             if (candidates.size() > 0) {
                 return candidates.get(0);
+            }
+
+            // Special case: Check for en passant if no regular move was found
+            // En passant: a pawn moving diagonally to an empty square
+            // The source must be from a pawn, and there must be an enemy pawn on the same rank as the source
+            if (hint.isEmpty() == false) {
+                // hint contains the source file (e.g., "e" in "exf6")
+                // Try to find a pawn on that file that can do en passant
+                try {
+                    int sourceFile = Character.getNumericValue(hint.charAt(0)) - Character.getNumericValue('a');
+                    if (sourceFile >= 0 && sourceFile <= 7) {
+                        // Look for a white pawn on rank 5 (index 4) or black pawn on rank 4 (index 3)
+                        // These are the only ranks where en passant is possible
+                        int[] possibleRanks = currentPlayer == Color.WHITE ? new int[]{4} : new int[]{3};
+                        
+                        for (int rankIdx : possibleRanks) {
+                            Position pawnPos = new Position(sourceFile, rankIdx);
+                            Piece pawn = board.getPiece(pawnPos);
+                            
+                            if (pawn instanceof chess.pieces.Pawn && pawn.getColor() == currentPlayer) {
+                                // Check if target is diagonal to pawn
+                                int targetFile = toPos.getFile();
+                                int targetRank = toPos.getRank();
+                                int pawnFile = pawnPos.getFile();
+                                int rankDirection = currentPlayer == Color.WHITE ? 1 : -1;
+                                
+                                // En passant target should be one rank forward and one file to the side
+                                if (Math.abs(targetFile - pawnFile) == 1 && 
+                                    targetRank - rankIdx == rankDirection) {
+                                    
+                                    // Check if there's an enemy pawn on the same rank as our pawn
+                                    Position capturedPawnPos = new Position(targetFile, rankIdx);
+                                    Piece capturedPawn = board.getPiece(capturedPawnPos);
+                                    
+                                    if (capturedPawn instanceof chess.pieces.Pawn && capturedPawn.getColor() != currentPlayer) {
+                                        // This is a valid en passant move
+                                        Move enPassantMove = new Move.Builder(pawnPos, toPos, pawn)
+                                                .capturedPiece(capturedPawn)
+                                                .build();
+                                        
+                                        // Validate it
+                                        if (MoveValidator.isValidMove(board, enPassantMove, currentPlayer)) {
+                                            return enPassantMove;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    // Ignore and continue
+                }
             }
 
             return null;

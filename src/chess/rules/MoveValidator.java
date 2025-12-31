@@ -28,7 +28,23 @@ public class MoveValidator {
         }
 
         // Check move is pseudo-legal
-        if (!piece.getLegalDestinations(board).contains(move.getTo())) {
+        // Special case: allow en passant moves (diagonal pawn moves to empty square with a captured pawn)
+        boolean isLegalDestination = piece.getLegalDestinations(board).contains(move.getTo());
+        boolean isEnPassant = false;
+        
+        if (!isLegalDestination && piece instanceof chess.pieces.Pawn && move.isCapture()) {
+            // Check if this could be en passant
+            if (move.getFrom().getFile() != move.getTo().getFile() && 
+                move.getFrom().getRank() != move.getTo().getRank() &&
+                board.isEmpty(move.getTo()) &&
+                move.getCapturedPiece() instanceof chess.pieces.Pawn) {
+                // This looks like en passant
+                isEnPassant = true;
+                isLegalDestination = true;
+            }
+        }
+        
+        if (!isLegalDestination) {
             return false;
         }
 
@@ -44,6 +60,20 @@ public class MoveValidator {
         
         // Apply the move on the copy
         boardCopy.movePiece(move.getFrom(), move.getTo());
+        
+        // Handle en passant: remove the captured pawn if it's not at the destination
+        if (move.isCapture() && move.getCapturedPiece() instanceof chess.pieces.Pawn) {
+            // Check if this is en passant (pawn moved diagonally but destination is empty in original board)
+            if (move.getFrom().getFile() != move.getTo().getFile() && 
+                move.getFrom().getRank() != move.getTo().getRank()) {
+                // This is a diagonal pawn move - check if captured piece is on a different square
+                Position capturedPos = new Position(move.getTo().getFile(), move.getFrom().getRank());
+                if (boardCopy.getPiece(capturedPos) == move.getCapturedPiece()) {
+                    // This is en passant - remove the pawn at its actual position
+                    boardCopy.removePiece(capturedPos);
+                }
+            }
+        }
         
         // Check if the player's king is in check
         CheckDetector detector = new CheckDetector();
