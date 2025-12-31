@@ -275,6 +275,11 @@ public class Main {
             return handleBotMove();
         }
 
+        // Display player's remaining time
+        ChessClock clock = currentGame.getClock();
+        long remainingTimeMs = clock.getRemainingTime(currentPlayer.getColor());
+        ui.displayPlayerTimer(currentPlayer.getName(), remainingTimeMs);
+
         // Get player input
         String input = ui.promptForMove(currentPlayer.getName());
 

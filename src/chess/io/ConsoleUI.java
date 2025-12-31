@@ -352,5 +352,17 @@ public class ConsoleUI {
     public void displayUndoUnavailable() {
         System.out.println(ANSI_RED + "✗ No moves to undo" + ANSI_RESET);
     }
+
+    /**
+     * Displays the current player's remaining time.
+     * Shows formatted time (MM:SS format) for the active player.
+     * 
+     * @param playerName the name of the current player
+     * @param remainingTimeMs the remaining time in milliseconds
+     */
+    public void displayPlayerTimer(String playerName, long remainingTimeMs) {
+        String formattedTime = chess.util.TimeUtils.formatTime(remainingTimeMs);
+        System.out.println(ANSI_BLUE + playerName + " remaining time: " + formattedTime + ANSI_RESET);
+    }
 }
 

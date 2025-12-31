@@ -45,6 +45,9 @@ public class Game {
         this.gameState = GameState.ONGOING;
         this.drawOfferPending = false;
         this.drawOfferer = null;
+        
+        // Start the clock for the initial player (White)
+        this.clock.startTurn(Color.WHITE);
     }
 
     public Game(Player whitePlayer, Player blackPlayer, String fenString) {
@@ -190,8 +193,15 @@ public class Game {
         if (move == null) {
             throw new IllegalArgumentException("Move must not be null");
         }
+        
+        // Stop the clock for the current player
+        clock.stopTurn();
+        
         moveHistory.add(move);
         switchPlayer();
+        
+        // Start the clock for the new current player
+        clock.startTurn(currentPlayer);
     }
 
     /**
@@ -215,10 +225,16 @@ public class Game {
      */
     public void undoLastMove() {
         if (!moveHistory.isEmpty()) {
+            // Stop the clock for the current player
+            clock.stopTurn();
+            
             moveHistory.remove(moveHistory.size() - 1);
             switchPlayer();
             drawOfferPending = false;
             drawOfferer = null;
+            
+            // Restart the clock for the restored current player
+            clock.startTurn(currentPlayer);
         }
     }
 
