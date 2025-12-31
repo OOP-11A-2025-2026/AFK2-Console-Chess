@@ -24,6 +24,7 @@ public class Main {
     private static UndoManager undoManager;
     private static CheckDetector checkDetector;
     private static GameController gameController;
+    private static CommandHandler commandHandler;
     private static Scanner scanner;
     private static Random random;
 
@@ -32,6 +33,7 @@ public class Main {
         undoManager = new UndoManager();
         checkDetector = new CheckDetector();
         gameController = new GameController();
+        commandHandler = new CommandHandler(gameController, ui);
         scanner = new Scanner(System.in);
         random = new Random();
 
@@ -98,17 +100,14 @@ public class Main {
         String blackName = scanner.nextLine().trim();
         if (blackName.isEmpty()) blackName = "Player 2";
 
-        Player white = new Player(whiteName, Color.WHITE, false);
-        Player black = new Player(blackName, Color.BLACK, false);
-        ChessClock clock = new ChessClock(5 * 60 * 1000); // 5 minutes per player
-
         try {
-            currentGame = new Game(white, black, clock);
+            gameController.setupNewGame(whiteName, blackName);
+            currentGame = gameController.getGame();
             undoManager.clear();
             undoManager.saveSnapshot(currentGame);  // Save initial board state
             ui.displayMessage("Game started!");
             ui.displayBoard(currentGame.getBoard());
-        } catch (Exception e) {
+        } catch (EngineException e) {
             ui.displayError("Failed to create game: " + e.getMessage());
         }
     }
@@ -165,32 +164,22 @@ public class Main {
         String colorChoice = scanner.nextLine().trim();
         Color playerColor = colorChoice.equals("2") ? Color.BLACK : Color.WHITE;
 
-        Player human = new Player(playerName, playerColor, false);
-        Player bot = new Player("Stockfish " + difficulty.name(), playerColor.opposite(), true);
-
-        Player white = playerColor == Color.WHITE ? human : bot;
-        Player black = playerColor == Color.BLACK ? human : bot;
-
         try {
-            ChessClock clock = new ChessClock(5 * 60 * 1000); // 5 minutes per player
-            currentGame = new Game(white, black, clock);
-            
-            // Initialize bot in game controller
-            gameController.newGame(white, black, null);
-            gameController.initializeBot(difficulty);
-            ui.displayMessage("Bot initialized (" + difficulty.name() + ")");
+            boolean botPlayFirst = gameController.setupBotGame(playerName, difficulty, playerColor);
+            currentGame = gameController.getGame();
             
             undoManager.clear();
             undoManager.saveSnapshot(currentGame);  // Save initial board state
+            ui.displayMessage("Bot initialized (" + difficulty.name() + ")");
             ui.displayMessage("Game started! Playing as " + playerColor.name() + " against " + difficulty.name() + " bot");
             ui.displayBoard(currentGame.getBoard());
 
             // If bot plays as white, make bot move immediately
-            if (bot.getColor() == Color.WHITE) {
+            if (botPlayFirst) {
                 ui.displayMessage("Bot is thinking... (may take a few seconds)");
                 handleBotMove();
             }
-        } catch (Exception e) {
+        } catch (EngineException e) {
             ui.displayError("Failed to create bot game: " + e.getMessage());
         }
     }
@@ -360,13 +349,13 @@ public class Main {
             // Check for space-separated coordinate notation (e.g., "e2 e4")
             String[] parts = moveInput.trim().split("\\s+");
 
-            if (parts.length == 2 && isSquare(parts[0]) && isSquare(parts[1])) {
+            if (parts.length == 2 && AlgebraicNotationUtil.isValidSquare(parts[0]) && AlgebraicNotationUtil.isValidSquare(parts[1])) {
                 String from = parts[0];
                 String to = parts[1];
 
                 // If this is castling in coordinate form (e1 g1, e1 c1, e8 g8, e8 c8),
                 // route it through SAN so the rook is moved by the engine.
-                String castleSan = castlingSanFromCoords(from, to);
+                String castleSan = AlgebraicNotationUtil.convertCastlingCoordinateToSan(from, to);
                 try {
                     if (castleSan != null) {
                         currentGame.applySan(castleSan);
@@ -388,7 +377,7 @@ public class Main {
                 String from = moveInput.substring(0, 2);
                 String to = moveInput.substring(2, 4);
 
-                String castleSan = castlingSanFromCoords(from, to);
+                String castleSan = AlgebraicNotationUtil.convertCastlingCoordinateToSan(from, to);
                 try {
                     if (castleSan != null) {
                         currentGame.applySan(castleSan);
@@ -421,35 +410,6 @@ public class Main {
             undoManager.undo(currentGame);
             return true;
         }
-    }
-
-    /**
-     * Checks if a string is a valid chess square (e.g., "e4").
-     */
-    private static boolean isSquare(String str) {
-        return str != null && str.length() == 2 &&
-               str.charAt(0) >= 'a' && str.charAt(0) <= 'h' &&
-               str.charAt(1) >= '1' && str.charAt(1) <= '8';
-    }
-
-    /**
-     * Converts coordinate castling (e.g., e1g1, e1c1, e8g8, e8c8) to SAN castling.
-     * Returns "O-O" or "O-O-O" (capital letter O), or null if not a castling coordinate.
-     */
-    private static String castlingSanFromCoords(String from, String to) {
-        if (from == null || to == null) return null;
-        from = from.trim();
-        to = to.trim();
-
-        // White
-        if (from.equals("e1") && to.equals("g1")) return "O-O";
-        if (from.equals("e1") && to.equals("c1")) return "O-O-O";
-
-        // Black
-        if (from.equals("e8") && to.equals("g8")) return "O-O";
-        if (from.equals("e8") && to.equals("c8")) return "O-O-O";
-
-        return null;
     }
 
     /**
@@ -520,37 +480,10 @@ public class Main {
      * Handles a bot move.
      */
     private static boolean handleBotMove() {
-        if (currentGame == null || !gameController.isBotInitialized()) {
-            return true;
-        }
-
         try {
-            undoManager.saveSnapshot(currentGame);
-            ui.displayMessage("Bot is thinking...");
-
-            String uciMove = gameController.getBotMove();
-
-            // Convert UCI move (e.g., "e2e4") to coordinate notation
-            String from = uciMove.substring(0, 2);
-            String to = uciMove.substring(2, 4);
-
-            // Apply the move (route castling through SAN so rook moves too)
-            String castleSan = castlingSanFromCoords(from, to);
-            if (castleSan != null) {
-                currentGame.applySan(castleSan);
-                ui.displayMessage("Bot played: " + castleSan);
-            } else {
-                currentGame.applyMove(from, to);
-                ui.displayMessage("Bot played: " + from + " → " + to);
-            }
-
-            return true;
-        } catch (Exception e) {
+            return commandHandler.handleBotMove(gameController, currentGame, undoManager);
+        } catch (EngineException e) {
             ui.displayError("Bot move failed: " + e.getMessage());
-            try {
-                undoManager.undo(currentGame);
-            } catch (Exception ignored) {
-            }
             return true;
         }
     }

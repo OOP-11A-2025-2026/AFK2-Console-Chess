@@ -2,7 +2,10 @@ package chess.io;
 
 import chess.core.*;
 import chess.engine.GameController;
+import chess.engine.EngineException;
 import chess.rules.*;
+import chess.util.AlgebraicNotationUtil;
+
 import java.io.File;
 
 /**
@@ -364,6 +367,59 @@ public class CommandHandler {
 
         ui.displayBoard(currentGame.getBoard());
         ui.displayGameInfo(currentGame);
+    }
+
+    /**
+     * Handles a bot move by getting the bot's move from the game controller,
+     * applying it to the current game, and updating the UI.
+     * 
+     * @param gameController the game controller managing the bot
+     * @param game the current game
+     * @param undoManager the undo manager for reverting failed moves
+     * @return true to continue game loop, false to exit
+     * @throws EngineException if bot move generation fails
+     */
+    public boolean handleBotMove(GameController gameController, Game game, UndoManager undoManager) throws EngineException {
+        if (game == null || !gameController.isBotInitialized()) {
+            return true;
+        }
+
+        try {
+            // Save state for potential undo
+            undoManager.saveSnapshot(game);
+            ui.displayMessage("Bot is thinking...");
+
+            // Get bot's best move in UCI format (e.g., "e2e4")
+            String uciMove = gameController.getBotMove();
+
+            // Convert UCI move to coordinates
+            String from = uciMove.substring(0, 2);
+            String to = uciMove.substring(2, 4);
+
+            // Check if this is a castling move in coordinate form
+            String castleSan = AlgebraicNotationUtil.convertCastlingCoordinateToSan(from, to);
+
+            // Apply the move
+            if (castleSan != null) {
+                // Apply castling via SAN so rook is moved by the engine
+                game.applySan(castleSan);
+                ui.displayMessage("Bot played: " + castleSan);
+            } else {
+                // Apply regular move via coordinates
+                game.applyMove(from, to);
+                ui.displayMessage("Bot played: " + from + " → " + to);
+            }
+
+            return true;
+        } catch (Exception e) {
+            ui.displayError("Bot move failed: " + e.getMessage());
+            try {
+                undoManager.undo(game);
+            } catch (Exception ignored) {
+                // Ignore undo errors
+            }
+            return true;
+        }
     }
 }
 

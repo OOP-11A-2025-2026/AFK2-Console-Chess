@@ -215,4 +215,12 @@ public class StockfishEngine implements ChessEngine {
             isRunning = false;
         }
     }
+
+    /**
+     * Closes the engine resource (implements AutoCloseable).
+     */
+    @Override
+    public void close() throws IOException {
+        stop();
+    }
 }

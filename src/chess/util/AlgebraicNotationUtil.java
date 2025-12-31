@@ -84,4 +84,57 @@ public class AlgebraicNotationUtil {
         }
         return rank - '1';
     }
+
+    /**
+     * Converts castling coordinates to SAN notation.
+     * E.g., "e1" "g1" -> "O-O" (white kingside castling)
+     * 
+     * @param from the from square (e.g., "e1", "e8")
+     * @param to the to square (e.g., "g1", "c1", "g8", "c8")
+     * @return "O-O" for kingside, "O-O-O" for queenside, or null if not castling
+     */
+    public static String convertCastlingCoordinateToSan(String from, String to) {
+        if (from == null || to == null) {
+            return null;
+        }
+        from = from.trim();
+        to = to.trim();
+
+        // White kingside castling
+        if (from.equals("e1") && to.equals("g1")) {
+            return "O-O";
+        }
+        // White queenside castling
+        if (from.equals("e1") && to.equals("c1")) {
+            return "O-O-O";
+        }
+        // Black kingside castling
+        if (from.equals("e8") && to.equals("g8")) {
+            return "O-O";
+        }
+        // Black queenside castling
+        if (from.equals("e8") && to.equals("c8")) {
+            return "O-O-O";
+        }
+
+        return null;
+    }
+
+    /**
+     * Validates if a string is a valid chess square notation (e.g., "e4", "a1").
+     * A valid square must be 2 characters: file (a-h) and rank (1-8).
+     * 
+     * @param square the square string to validate
+     * @return true if the square is valid, false otherwise
+     */
+    public static boolean isValidSquare(String square) {
+        if (square == null || square.length() != 2) {
+            return false;
+        }
+
+        char file = square.charAt(0);
+        char rank = square.charAt(1);
+
+        return file >= 'a' && file <= 'h' && rank >= '1' && rank <= '8';
+    }
 }

@@ -156,12 +156,12 @@ public class GameController
             {
                 java.lang.Class<?> posClass = Class.forName("chess.core.Position");
                 java.lang.reflect.Method fromFactory = posClass.getMethod("fromAlgebraic", String.class);
-                Object posFrom = fromFactory.invoke(null, fromSquare);
-                Object posTo = fromFactory.invoke(null, toSquare);
+                fromFactory.invoke(null, fromSquare);
+                fromFactory.invoke(null, toSquare);
 
                 try
                 {
-                    java.lang.reflect.Method make = game.getClass().getMethod("applyMove", Class.forName("chess.core.Move"));
+                    game.getClass().getMethod("applyMove", Class.forName("chess.core.Move"));
                     throw new EngineException("Coordinate-apply fallback requires Game.resolveMove(Position, Position) or Game.applyMove(from,to) support");
                 }
                 catch (NoSuchMethodException e)
@@ -523,4 +523,81 @@ public class GameController
      */
     public synchronized boolean isBotInitialized() {
         return engine != null;
-    }}
+    }
+
+    /**
+     * Sets up a new 2-player game with given player names.
+     * Creates players with appropriate colors and initializes the game.
+     * 
+     * @param whiteName name for white player
+     * @param blackName name for black player
+     * @throws EngineException if game creation fails
+     */
+    public synchronized void setupNewGame(String whiteName, String blackName) throws EngineException {
+        if (whiteName == null || whiteName.trim().isEmpty()) {
+            whiteName = "Player 1";
+        }
+        if (blackName == null || blackName.trim().isEmpty()) {
+            blackName = "Player 2";
+        }
+
+        whiteName = whiteName.trim();
+        blackName = blackName.trim();
+
+        try {
+            Player white = new Player(whiteName, Color.WHITE, false);
+            Player black = new Player(blackName, Color.BLACK, false);
+            newGame(white, black, null);
+        } catch (EngineException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new EngineException("Failed to create new game: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Sets up a new game against the bot with given difficulty.
+     * Creates a human player and a bot player with appropriate colors.
+     * Initializes the bot engine with the specified difficulty.
+     * 
+     * @param playerName name for the human player
+     * @param difficulty bot difficulty level
+     * @param playerColor color for the human player (WHITE or BLACK)
+     * @return true if bot plays as white (moves first), false if human plays as white
+     * @throws EngineException if game creation or bot initialization fails
+     */
+    public synchronized boolean setupBotGame(String playerName, BotDifficulty difficulty, Color playerColor) throws EngineException {
+        if (playerName == null || playerName.trim().isEmpty()) {
+            playerName = "Human";
+        }
+        if (difficulty == null) {
+            difficulty = BotDifficulty.INTERMEDIATE;
+        }
+        if (playerColor == null) {
+            playerColor = Color.WHITE;
+        }
+
+        playerName = playerName.trim();
+
+        try {
+            Player human = new Player(playerName, playerColor, false);
+            Player bot = new Player("Stockfish " + difficulty.name(), playerColor.opposite(), true);
+
+            Player white = playerColor == Color.WHITE ? human : bot;
+            Player black = playerColor == Color.BLACK ? human : bot;
+
+            // Set up the game first
+            newGame(white, black, null);
+
+            // Then initialize the bot
+            initializeBot(difficulty);
+
+            // Return true if bot is playing white (i.e., should move first)
+            return bot.getColor() == Color.WHITE;
+        } catch (EngineException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new EngineException("Failed to create bot game: " + e.getMessage(), e);
+        }
+    }
+}

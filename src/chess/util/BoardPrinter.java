@@ -6,11 +6,6 @@ import chess.core.*;
  * Utility class for printing the chess board to console.
  */
 public class BoardPrinter {
-    private static final String RESET = "\u001B[0m";
-    private static final String WHITE_BG = "\u001B[47m";
-    private static final String BLACK_BG = "\u001B[40m";
-    private static final String WHITE_TEXT = "\u001B[37m";
-    private static final String BLACK_TEXT = "\u001B[30m";
 
     private BoardPrinter() {
         // Prevent instantiation

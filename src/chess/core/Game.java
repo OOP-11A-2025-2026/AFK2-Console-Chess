@@ -1,7 +1,6 @@
 package chess.core;
 
 import chess.rules.*;
-import chess.io.InputParser;
 import chess.util.AlgebraicNotationUtil;
 import java.util.ArrayList;
 import java.util.List;
@@ -308,7 +307,6 @@ public class Game {
         }
 
         // Check for capture
-        boolean isCapture = san.contains("x");
         san = san.replace("x", "");
 
         // Extract destination square (last 2 chars)

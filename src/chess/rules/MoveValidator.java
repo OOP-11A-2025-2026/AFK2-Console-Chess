@@ -1,7 +1,6 @@
 package chess.rules;
 
 import chess.core.*;
-import chess.pieces.*;
 
 /**
  * Validates chess moves according to FIDE rules.
